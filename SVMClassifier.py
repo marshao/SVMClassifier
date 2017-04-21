@@ -24,12 +24,14 @@ class SVMClassifier:
         self.T = 0.001               #Tolerance(Accuracy) of System
         self.C = 10                   #Penotal Coefficients
         self.step = 0.001             #Min step length of alpha1
-        self.iter_times = 50           #Max iterration times
+        self.Loop = 20           #Max iterration times
         self.Models_Dict = []           #Dictonary to Store Models
         self.KernalType = 'l'          # predefine the Kernal Type is linear Kernal
         self.GaussinDelta = 8           # Define a default value of Delta for Gaussin Kernal
         self.PolinomailR = 1            # Default value of Polinomail Kernal R
         self.Polinomaild = 2            # Default value of Polinomail Kernal d
+        self.alpha1Idx = 0                 #Index of Alpha 1
+        self.alpha2Idx = 0                 #Index of Alpha 2
 
     def LoadData(self, model):
         '''Load Samples Data into Numpy Matrix
@@ -89,12 +91,34 @@ class SVMClassifier:
         '''Find Alpha1 from Entire sample set'''
         pass
 
-    def _Find_Alpha2(self):
+    def _Find_Alpha2(self, idx1, E1, KernalType = None):
         '''Find Alpha2 when Alpha1 is decided
         Step1: Find Alpha2 by Max|E1-E2|
         Step2: If (Alpha2New-Alpha2old)<Step, then find Alpha2 from boundary samples
         Step3: If (Alpha2New-Alpha2old)<Step, then find Alpha2 from all samples
         '''
+        if KernalType is None:
+            KernalType = self.KernalType
+
+        alpha1 = idx1
+        alpha2 = 0
+        # gap is |E1 - E2|
+        gap = 0
+        for idx2 in range(len(self.alphas)):
+            if alpha1 == idx2: continue
+            # eta is the distance of two Alphas, it must be > 0. If eta < 0, then the eta must be wrong
+            eta = self._Cal_eta(alpha1, idx2, KernalType)
+            if eta < 0:
+                print "eta %s should not be less than 0." % eta
+                continue
+            E2 = self._Cal_Ei(idx2, KernalType)
+            tmp = math.fabs(E1-E2)
+            if tmp > gap:
+                gap = tmp
+                alpha2 = idx2
+        return alpha2
+
+
         pass
 
     def _Cal_F(self, x2, KernalType=None):
@@ -197,8 +221,10 @@ class SVMClassifier:
         '''Function to renew Alpha1'''
         pass
 
-    def _Cal_Alpha2(self):
-        '''Function to renew Alpha2'''
+    def _Cal_Alpha2(self, idx2):
+        '''Function to renew Alpha2
+            idx2 is the index of old Alpha2
+        '''
         pass
 
     def _Cal_eta(self, idx1, idx2, KernalType):
@@ -226,9 +252,43 @@ class SVMClassifier:
         '''Function to calculate b value when Alpha1 and Alpha2 are renewed'''
         pass
 
-    def Train_Model(self):
-        '''Function to train SVM models with training sample set'''
-        pass
+    def Train_Model(self, C = None, T=None, Loop = None, KernalType = None):
+        '''Function to train SVM models with training sample set
+            C is penalty coefficient with Default value self.C = 10
+            T is Tolerance coefficient with Default value self.T=0.001
+            Loop is max times of iteration with Default value self.Loop = 20
+        '''
+        # Setting Default Parameters
+        if C is None:
+            C = self.C
+        if T is None:
+            T = self.T
+        if Loop is None:
+            Loop = self.Loop
+        if KernalType is None:
+            KernalType = self.KernalType
+        # Initiate the index of alpha1 and alpha2 as 0
+        alpha1 = 0
+        alpha2 = 0
+
+        #Loop the list of Alpha until the reach the max loop number or all alphas have no furthur change
+        iter = 0
+        while iter < Loop:
+            iter += 1
+            # find alpha1's index by checking the violation of KKT condition
+            for alpha1 in range(len(self.alphas)):
+                y1 = self.TrainingLabels[alpha1]
+                E1 = self._Cal_Ei(alpha1, KernalType)
+                # KKT condition vilation checking
+                if (self.alphas[alpha1] < C and (y1*E1)< -T) or (self.alphas[alpha1] > 0 and (y1*E1) > T):
+
+                    #Find the most proper alpha2's index
+                    alpha2 = self._Find_Alpha2(alpha1, E1, KernalType)
+
+                    # Calculate new alpha2
+                    new_alpha2 = self._Cal_Alpha2(alpha2)
+
+
 
     def Cross_Validate_Model(self):
         '''Function to cross validate model with cv sample set'''
