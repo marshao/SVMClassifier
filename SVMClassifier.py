@@ -26,6 +26,10 @@ class SVMClassifier:
         self.step = 0.001             #Min step length of alpha1
         self.iter_times = 50           #Max iterration times
         self.Models_Dict = []           #Dictonary to Store Models
+        self.KernalType = 'l'          # predefine the Kernal Type is linear Kernal
+        self.GaussinDelta = 8           # Define a default value of Delta for Gaussin Kernal
+        self.PolinomailR = 1            # Default value of Polinomail Kernal R
+        self.Polinomaild = 2            # Default value of Polinomail Kernal d
 
     def LoadData(self, model):
         '''Load Samples Data into Numpy Matrix
@@ -35,35 +39,37 @@ class SVMClassifier:
         source = 'TrainingSamples.csv'
         fn = open(source, "r")
         for line in fn:
-            line = line[:-2]  # Remove the /r/n
+            line = line[:-1]  # Remove the /r/n
             vlist = line.split(",")
-            self.TrainingSamples.append([vlist[0], vlist[1]])
-            self.TrainingLabels.append(vlist[2])
+            self.TrainingSamples.append([float(vlist[0]), float(vlist[1])])
+            self.TrainingLabels.append(float(vlist[2]))
         print "Loaded %s Training Samples" %len(self.TrainingSamples)
         fn.close()
 
+        # Initialize Alpha list
+        alpha = float(1.1)
         i = 0
         while i < len(self.TrainingSamples):
-            self.alphas.append([0])
+            self.alphas.append(alpha)
             i+=1
         print "Length of alpha is %s"%len(self.alphas)
 
         if model == 'Testing':
             fn = open('TestingSamples.csv', 'r')
             for line in fn:
-                line = line[:-2]  # Remove the /r/n
+                line = line[:-1]  # Remove the /r/n
                 vlist = line.split(",")
-                self.TestingSampels.append([vlist[0], vlist[1]])
-                self.TestingLabels.append(vlist[2])
+                self.TestingSampels.append([float(vlist[0]), float(vlist[1])])
+                self.TestingLabels.append(float(vlist[2]))
             print "Loaded %s Testing Samples" %len(self.TestingSampels)
             fn.close()
         elif model == 'CV':
             fn = open('CVSamples.csv', 'r')
             for line in fn:
-                line = line[:-2]  # Remove the /r/n
+                line = line[:-1]  # Remove the /r/n
                 vlist = line.split(",")
-                self.CVSamples.append([vlist[0], vlist[1]])
-                self.CVLabels.append(vlist[2])
+                self.CVSamples.append([float(vlist[0]), float(vlist[1])])
+                self.CVLabels.append(float(vlist[2]))
             print "Loaded %s CV Samples" %len(self.TestingSampels)
             fn.close()
         else:
@@ -91,31 +97,49 @@ class SVMClassifier:
         '''
         pass
 
-    def _Cal_F(self, x2):
+    def _Cal_F(self, x2, KernalType=None):
         '''The determine function F(x) to calculate the prediciton values
-            x2 is a sample (vector of atributes Ex:[0.34, 0.21, 0.57])
+            x2 is the sample (vector of atributes Ex:[0.34, 0.21, 0.57]) waiting to be predicted
         '''
-        # Vectorize Smaples
-        x1 = np.array(self.TrainingSamples)
+        # Setting the default Kernal type
+        if KernalType is None:
+            KernalType = self.KernalType
+
+        # Calculate Kernal, return value is a ndarray
+        x1 = self.TrainingSamples
+        Kernal_Val = np.ndarray(self._Cal_Kernal(x1, x2, KernalType))
+
+        #Vectorize label y and alpha into ndarry for the next step of calculation
         y = np.array(self.TrainingLabels)
         alpha = np.array(self.alphas)
-        Kernal_Val = self._Cal_Kernal('l', x1, x2)
-        print Kernal_Val
-        print "Prediction Lable of data sample %s is %s"%(x2, val)
+        prediction_value = sum(alpha*y*Kernal_Val) + self.b
+        print "Prediction Lable of data sample %s is %s"%(x2, prediction_value)
+        return prediction_value
 
-    def _Cal_Kernal(self, mode, x1, x2, delta=8, R=1, d=2):
+    def _Cal_Kernal(self,  x1, x2, mode=None,delta=None, R=None, d=None):
         '''Kernal function to calculate Kernals
             Linear Kernal
             Gaussin Kernal RBF
             Polinominal Kernal
             Kernals are based on the Dot.Product of X-Predicting and X-Samples
+            x1 and x2 are the sample value
+            x1 and x2 should be type of python list, not vector.
         '''
+        if mode is None:
+            mode=self.KernalType
+        if delta is None:
+            delta = self.GaussinDelta
+        if R is None:
+            R = self.PolinomailR
+        if d is None:
+            d = self.Polinomaild
+
         if mode == 'l':
-            self._Cal_Linear_Kernal(x1,x2)
+            return self._Cal_Linear_Kernal(x1,x2)
         elif mode == 'g':
-            self._Cal_Gaussin_Kernal(x1,x2,delta)
+            return self._Cal_Gaussin_Kernal(x1,x2,delta)
         elif mode == 'p':
-            self._Cal_Polinomial_Kernal(x1,x2,R,d)
+            return self._Cal_Polinomial_Kernal(x1,x2,R,d)
         else:
             print "No such kernal type, kernal must be in l/g/p"
 
@@ -151,11 +175,23 @@ class SVMClassifier:
         return val
 
 
-    def _Cal_Ei(self):
-        '''Function to calculate difference between label and prediciton
-        Yi - f(x)
+    def _Cal_Ei(self,idx, KernalType=None):
+        '''Function to calculate difference between label and prediction
+        E_idx=f(x_idx)-y_idx
+        idx is the index of sample vector waiting for be predicted
+        Kernal_Type is the type of Kernal in Using
+        Will this E1 function only usful when Training, otherwise the idx may be ambigous to pointing to sample in Training set or Test Set.Lets make is only for Tranining set first
         '''
-        pass
+        # Define the Kernal Type
+        if KernalType is None:
+            KernalType = self.KernalType
+
+        # x2 is the sample vector waiting for be predicted.
+        x2 = self.TrainingSamples[idx]
+        predict = self._Cal_F(x2, KernalType)
+        Eidx = predict - self.TrainingLabels[idx]
+        print "Eidx for training sample %s is %s"%(idx, Eidx)
+        return Eidx
 
     def _Cal_Alpha1(self):
         '''Function to renew Alpha1'''
@@ -165,9 +201,26 @@ class SVMClassifier:
         '''Function to renew Alpha2'''
         pass
 
-    def _Cal_eta(self):
-        '''Function to calcate eta'''
-        pass
+    def _Cal_eta(self, idx1, idx2, KernalType):
+        '''Function to calcate eta
+        eta = K11+K22-2K12
+        K is Knernal,
+        idx1 and idx2 is the index of Training Samples, also correspond to the index of Alpha
+        Kernal Type is the Kernal Type
+        Presume this eta Calculaton will only be using in Training Set
+        '''
+        # Define the default Kernal Type
+        if KernalType is None:
+            KernalType = self.KernalType
+
+        x1 = self.TrainingSamples[idx1]
+        x2 = self.TrainingSamples[idx2]
+        K11 = self._Cal_Kernal(x1,x1,KernalType)
+        K22 = self._Cal_Kernal(x2,x2,KernalType)
+        K12 = self._Cal_Kernal(x1,x2,KernalType)
+        eta = K11+K22-2*K12
+        print "eta value is %s"%eta
+        return eta
 
     def _Cal_b(self):
         '''Function to calculate b value when Alpha1 and Alpha2 are renewed'''
@@ -199,13 +252,22 @@ class SVMClassifier:
 def main():
 
     model = SVMClassifier()
-    model.LoadData('Testing')
+    model.LoadData('Train')
 
     x1 = [[1.,2.,3.,4.],[4.,5.,6.,7.]]
     x2 = [5.,6.,7.,8.]
-    x1 = [1,1]
-    x2 = [3,4]
-    model._Cal_Kernal("l", x1,x2)
+    #x1 = np.array([2,2,6,3])
+    #x2 = np.array([3,4,2,5])
+    #x1 = [2.,2.,6.,3.]
+    #x2 = [0.7,4.,2.,5.]
+    x1 = model.TrainingSamples
+    x2 =[0.77, 0.42]
+    #model._Cal_Kernal("l", x1,x2)
+    #model._Cal_F(x2,'l')
+    #model._Cal_Ei(25)
+    model._Cal_eta(12,78,'l')
+    #print x1*x2
+
 
 if __name__ == '__main__':
     main()
