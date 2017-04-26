@@ -26,7 +26,7 @@ class SVMClassifier:
         self.Step = 0.01             #Min step length of alpha1
         self.Loop = 20           #Max iterration times
         self.Models_Dict = []           #Dictonary to Store Models
-        self.KernalType = 'l'          # predefine the Kernal Type is linear Kernal
+        self.KernalType = 'g'          # predefine the Kernal Type is linear Kernal
         self.KernalCatch_Dict = {}           #Kernal Catch Values Dictionary
         self.GaussinSigma = 8.0           # Define a default value of Delta for Gaussin Kernal
         self.PolinomailR = 1.0            # Default value of Polinomail Kernal R
@@ -539,7 +539,7 @@ class SVMClassifier:
             iter += 1
             print "Iteration %s is start"%iter
             print"--------------------------------------------------------------------"
-            time.sleep(2)
+            #time.sleep(2)
             # find alpha1_idx's index by checking the violation of KKT condition
             for alpha1_idx in range(len(self.alphas)):
                 print alpha1_idx
@@ -667,10 +667,11 @@ class SVMClassifier:
         programPause = raw_input("Press any key to continue")
 
 def main():
-
-    model = SVMClassifier()
-    model.LoadData('Testing', Training_source='TrainingSamples5.csv')
-    model._Update_Variables(C=1.0, Sigma=0.1, T=0.001, Step=0.005, KernalType='g', alpha_ini=True, alpha_val=0.1, Kernal_ini=True )
+    import profile
+    import pstats
+    #model = SVMClassifier()
+    #model.LoadData('Testing', Training_source='TrainingSamples3.csv')
+    #model._Update_Variables(C=1.0, Sigma=0.1, T=0.001, Step=0.01, KernalType='g', alpha_ini=True, alpha_val=0.1, Kernal_ini=True )
     #print model.KernalCatch_Dict
     '''
     for alpha1_idx in range(len(model.alphas)):
@@ -679,11 +680,25 @@ def main():
         print "predict is %s"%predict
         print "Ei is %s"%Eidx
     '''
-    model.Train_Model(Loop=3, KernalType='g',)
-    model.Load_Model()
-    model.Test_Model(KernalType='g')
+    profile.run("run()", "prof.txt")
+    p = pstats.Stats('prof.txt')
+    p.sort_stats('time').print_stats()
+    #model.Load_Model()
+    #model.Test_Model(KernalType='g')
 
-
+def run():
+    model = SVMClassifier()
+    model.LoadData('Testing', Training_source='TrainingSamples2.csv')
+    model._Update_Variables(C=1.0, Sigma=0.1, T=0.001, Step=0.01, KernalType='g', alpha_ini=True, alpha_val=0.1,
+                            Kernal_ini=True)
+    '''
+        for alpha1_idx in range(len(model.alphas)):
+            predict = model._Cal_F(alpha1_idx, 'g')
+            Eidx = predict - model.TrainingLabels[alpha1_idx]
+            print "predict is %s"%predict
+            print "Ei is %s"%Eidx
+        '''
+    model.Train_Model(Loop=3)
 
 if __name__ == '__main__':
     main()
