@@ -23,7 +23,7 @@ class SVMClassifier:
         self.predicts = []  #Matrix of predicts
         self.T = 0.001               #Tolerance(Accuracy) of System
         self.C = 10.0                   #Penotal Coefficients
-        self.Step = 0.001             #Min step length of alpha1
+        self.Step = 0.01             #Min step length of alpha1
         self.Loop = 20           #Max iterration times
         self.Models_Dict = []           #Dictonary to Store Models
         self.KernalType = 'l'          # predefine the Kernal Type is linear Kernal
@@ -45,7 +45,11 @@ class SVMClassifier:
             line = line[:-1]  # Remove the /r/n
             vlist = line.split(",")
             self.TrainingSamples.append([float(vlist[0]), float(vlist[1])])
-            self.TrainingLabels.append(float(vlist[2]))
+            if float(vlist[2])==0:
+                label = -1
+            else:
+                label = float(vlist[2])
+            self.TrainingLabels.append(label)
         print "Loaded %s Training Samples" %len(self.TrainingSamples)
         fn.close()
 
@@ -55,7 +59,11 @@ class SVMClassifier:
                 line = line[:-1]  # Remove the /r/n
                 vlist = line.split(",")
                 self.TestingSampels.append([float(vlist[0]), float(vlist[1])])
-                self.TestingLabels.append(float(vlist[2]))
+                if float(vlist[2]) == 0:
+                    label = -1.0
+                else:
+                    label = float(vlist[2])
+                self.TestingLabels.append(label)
             print "Loaded %s Testing Samples" %len(self.TestingSampels)
             fn.close()
         elif model == 'CV':
@@ -64,12 +72,15 @@ class SVMClassifier:
                 line = line[:-1]  # Remove the /r/n
                 vlist = line.split(",")
                 self.CVSamples.append([float(vlist[0]), float(vlist[1])])
-                self.CVLabels.append(float(vlist[2]))
+                if float(vlist[2]) == 0:
+                    label = -1.0
+                else:
+                    label = float(vlist[2])
+                self.CVLabels.append(label)
             print "Loaded %s CV Samples" %len(self.TestingSampels)
             fn.close()
         else:
             pass
-
         return
 
     def _Find_Alpha1(self):
@@ -128,16 +139,21 @@ class SVMClassifier:
             SampleCount = len(self.TrainingSamples)
             for idx1 in range(SampleCount):
                 for idx2 in range(SampleCount):
+                    key1 = str(idx1) + '-' + str(idx2)
+                    key2 = str(idx2) + '-' + str(idx1)
                     x1 = self.TrainingSamples[idx1]
                     x2 = self.TrainingSamples[idx2]
+                    if self.KernalCatch_Dict.has_key(key1):
+                        continue
                     if KernalType == 'l':
                         KernalVal=self._Cal_Linear_Kernal(x1,x2)
                     elif KernalType == 'g':
                         KernalVal = self._Cal_Gaussin_Kernal(x1,x2,Sigma)
                     else:
                         KernalVal = self._Cal_Polinomial_Kernal(x1,x2,PolinomialR, Polinomiald)
-                    key = str(idx1)+'-'+str(idx2)
-                    self.KernalCatch_Dict[key]=KernalVal
+                    #print "Key: %s, Value: %s"%(key1, KernalVal)
+                    self.KernalCatch_Dict[key1] = KernalVal
+                    self.KernalCatch_Dict[key2] = KernalVal
 
         # Initialize or update Alpha list
         if alpha_ini:
@@ -150,8 +166,8 @@ class SVMClassifier:
             else:
                 i = 0
                 if len(self.alphas) == 0:
-                    while i < len(alpha_val):
-                        self.alphas.append(alpha_val[i])
+                    while i < len(self.TrainingSamples):
+                        self.alphas.append(alpha_val)
                         i += 1
                 elif len(self.alphas) == len(alpha_val):
                     while i < len(alpha_val):
@@ -190,7 +206,7 @@ class SVMClassifier:
         gap = 0
         eta = 0
         found = False
-        print "Find alpha 2 from all"
+        #print "   Find alpha 2 from all"
         for idx2 in range(len(self.alphas)):
             if alpha1 == idx2: continue
             # eta is the distance of two Alphas, it must be > 0. If eta < 0, then the eta must be wrong
@@ -205,7 +221,7 @@ class SVMClassifier:
                 alpha2 = idx2
                 eta = eta_tmp
                 found = True
-        if found:print "   @@@-2 For Alpha1 at %s the best All Alpha2 is %s"%(idx1, alpha2)
+        #if found:print "   @@@-2 For Alpha1 at %s the best All Alpha2 is %s"%(idx1, alpha2)
         return found, alpha2, eta
 
     def _Find_Alpha2_Nonbound(self, idx1, E1, KernalType=None):
@@ -219,7 +235,7 @@ class SVMClassifier:
         gap = 0
         eta = 0
         found = False
-        print "Find alpha 2 from non-boundary"
+        #print "   Find alpha 2 from non-boundary"
         for idx2 in range(len(self.alphas)):
             # Two alpha should not be same
             if alpha1 == idx2: continue
@@ -237,7 +253,7 @@ class SVMClassifier:
                     alpha2 = idx2
                     eta = eta_tmp
                     found = True
-        if found:print "   @@@-2 For Alpha1 at %s the best Non-Boundary Alpha2 is %s"%(idx1, alpha2)
+        #if found:print "   @@@-2 For Alpha1 at %s the best Non-Boundary Alpha2 is %s"%(idx1, alpha2)
         return found, alpha2, eta
 
     def _Cal_F(self, x2, KernalType=None, Mode=None):
@@ -268,14 +284,13 @@ class SVMClassifier:
         #print "   Kernal_Val is %s"%Kernal_Val
         #print type(val)
         Kernal_Val = np.array(val)
-
         #Vectorize label y and alpha into ndarry for the next step of calculation
         y = np.array(self.TrainingLabels)
         alpha = np.array(self.alphas)
         #print "K, Y, A, %s %s"%( len(y), len(alpha))
         prediction_value = sum(alpha*y*Kernal_Val) + self.b
         #print "Prediction Lable of data sample %s is %s"%(x2, prediction_value)
-        return prediction_value
+        return round(prediction_value,5)
 
     def _Fetch_Kernal(self,  idx1, idx2):
         '''Fetch Kernal value from calculated Kernal Catch
@@ -317,7 +332,7 @@ class SVMClassifier:
         '''
         val = np.dot(x1, x2)
         #print "Linear Kernal Value is %s"%val
-        return val
+        return round(val,5)
 
     def _Cal_Gaussin_Kernal(self,x1,x2,sigma):
         '''Calculation of Gaussion Kernal
@@ -330,7 +345,7 @@ class SVMClassifier:
         val = math.exp((-1)*(np.sum(np.square(x1-x2))/(2*sigma*sigma)))
         #val = math.exp((-1)*(math.pow(np.linalg.norm((x1-x2)),2)/(2*sigma*sigma)))
         #print val
-        return val
+        return round(val,5)
 
     def _Cal_Polinomial_Kernal(self,x1,x2,R,d):
         '''Calculation of Polinomial Kernal
@@ -339,8 +354,7 @@ class SVMClassifier:
         d is the power degree with default value 2
         '''
         val = math.pow((self._Cal_Linear_Kernal(x1,x2)+R),d)
-        print val
-        return val
+        return round(val,5)
 
 
     def _Cal_Ei(self,idx, KernalType=None):
@@ -359,9 +373,11 @@ class SVMClassifier:
         #predict = self._Cal_F(x2, KernalType)
         predict = self._Cal_F(idx, KernalType)
         Eidx = predict - self.TrainingLabels[idx]
+        #print "f(i) is %s"%predict
+        #print "E(i) is %s"%Eidx
         #print "   idx is %s, and x2 is: %s, predict is :%s, Eidx is : %s" % (idx, x2, predict, Eidx)
         #print "Eidx for training sample %s is %s"%(idx, Eidx)
-        return Eidx
+        return round(Eidx,5)
 
     def _Cal_Alpha1(self, idx1, idx2, new_alpha2):
         '''Function to renew Alpha1
@@ -375,7 +391,7 @@ class SVMClassifier:
 
         new_alpha1 = old_alpha1 + y1*y2*(old_alpha2-new_alpha2)
         #print "New Alpha1 %s value is %s"%(idx1, new_alpha1)
-        return new_alpha1
+        return round(new_alpha1,5)
 
     def _Cal_Alpha2(self, idx1, idx2, E1, eta, C=None, Step=None, KernalType=None):
         '''Function to renew Alpha2
@@ -415,19 +431,21 @@ class SVMClassifier:
         else:
             L = max(0.0, (old_alpha2-old_alpha1))
             H = min(C, (C+old_alpha1+old_alpha2))
-
+        if L == H:
+            valid = False
+            return valid, old_alpha2
         # Clip new_alpha2_value value
         if new_alpha2 > H: clipped_new_alpha2 = H
         elif new_alpha2 < L: clipped_new_alpha2 = L
         else: clipped_new_alpha2 = new_alpha2
 
-        print "   For Alpha2 at index %s, old value is %s, new value is %s, clipped value is %s, L is %s, H is %s"%(idx2, old_alpha2, new_alpha2, clipped_new_alpha2, L, H)
+        #print "   For Alpha2 at index %s, old value is %s, new value is %s, clipped value is %s, L is %s, H is %s"%(idx2, old_alpha2, new_alpha2, clipped_new_alpha2, L, H)
         # Vrifile whether the clipped_new_alpha2 moved big enough > step
         if abs(clipped_new_alpha2 - old_alpha2) < Step:
-            print "   Old_Alpha2:Value %s:%s - clipped_New_Alpha2:%s = Diff %s cannot provide enough change to old Alpha2"%(idx2, old_alpha2, clipped_new_alpha2, abs(clipped_new_alpha2 - old_alpha2))
+            #---print "   Old_Alpha2:Value %s:%s - clipped_New_Alpha2:%s = Diff %s cannot provide enough change to old Alpha2"%(idx2, old_alpha2, clipped_new_alpha2, abs(clipped_new_alpha2 - old_alpha2))
             valid = False
 
-        return valid, clipped_new_alpha2
+        return valid, round(clipped_new_alpha2,5)
 
     def _Cal_eta(self, idx1, idx2, KernalType=None):
         '''Function to calcate eta
@@ -451,7 +469,7 @@ class SVMClassifier:
         K12 = self._Fetch_Kernal(idx1, idx2)
         eta = K11+K22-2*K12
         #print "eta value for x1 %s and x2 %s is %s"%(idx1, idx2, eta)
-        return eta
+        return round(eta,5)
 
     def _Cal_b(self, idx1, idx2, new_alpha1, new_alpha2, KernalType = None, C=None):
         '''Function to calculate b value when Alpha1 and Alpha2 are renewed'''
@@ -482,8 +500,8 @@ class SVMClassifier:
         if new_alpha1 > 0 and new_alpha1 < C: new_b = new_alpha1
         elif new_alpha2 > 0 and new_alpha2 < C: new_b = new_alpha2
         else:   new_b = (new_b1 + new_b2)/2
-        print "   new b is %s"%new_b
-        return new_b
+        #print "   new b is %s"%new_b
+        return round(new_b,5)
 
 
 
@@ -515,28 +533,29 @@ class SVMClassifier:
 
         #Loop the list of Alpha until the reach the max loop number or all alphas have no furthur change
         iter = 0
-        updated_alpha = 0
-        while iter < Loop:
+        passes = 0
+        while passes < Loop:
+            updated_alpha = 0 # Alpha be changed in each loop
             iter += 1
-            done = False # Parameter to determine whether the training is finsihed or not.
             print "Iteration %s is start"%iter
             print"--------------------------------------------------------------------"
-            time.sleep(4)
-            done = True
+            time.sleep(2)
             # find alpha1_idx's index by checking the violation of KKT condition
             for alpha1_idx in range(len(self.alphas)):
+                print alpha1_idx
                 y1 = self.TrainingLabels[alpha1_idx]
                 E1 = self._Cal_Ei(alpha1_idx, KernalType)
-                print "@@@-1 For Alpha1 at %s with value %s, label y1 is %s, E1 is %s, C is %s, T is %s, alpha1 value is %s, y1*E1 = %s"%(alpha1_idx, old_alpha1, y1, E1, C, T, old_alpha1, y1*E1)
+                #print "E1 value is %s"%E1
+                #---print "@@@-1 For Alpha1 at %s with value %s, label y1 is %s, E1 is %s, C is %s, T is %s, alpha1 value is %s, y1*E1 = %s"%(alpha1_idx, old_alpha1, y1, E1, C, T, old_alpha1, y1*E1)
                 # KKT condition vilation checking
                 if (old_alpha1 < C and (y1*E1)< -T) or (old_alpha1 > 0 and (y1*E1) > T):
                     done = False
                     #Find the most proper alpha2_idx's index
                     found, alpha2_idx, eta = self._Find_Alpha2(alpha1_idx, E1, KernalType)
-                    print "   Found Alpha2 is %s and Alpha2 is %s"%(found, alpha2_idx)
+                    #print "   Found Alpha2 is %s and Alpha2 is %s"%(found, alpha2_idx)
                     if found == False:
                         # Cannot find proper Alpha2 for Alpha1, change to an new alpha1_idx
-                        print "   Cannot find proper Alpha2 for Alpha1 %s, change to an new Alpha1" % alpha1_idx
+                        #print "   Cannot find proper Alpha2 for Alpha1 %s, change to an new Alpha1" % alpha1_idx
                         continue
 
                     # Calculate new alpha2_idx
@@ -544,6 +563,8 @@ class SVMClassifier:
                     if valid == False:
                         #print "There is no valid value for alpha2 at index %s"%alpha2_idx
                         continue
+                    else:
+                        updated_alpha += 1
 
                     # Calculate new alpha1_idx
                     new_alpha1 = self._Cal_Alpha1(alpha1_idx, alpha2_idx, clipped_new_alpha2)
@@ -555,25 +576,22 @@ class SVMClassifier:
                     self._Update_Variables(idx1=alpha1_idx, alpha1=new_alpha1,
                                            idx2=alpha2_idx, alpha2= clipped_new_alpha2,
                                            b = new_b)
-                    print "@@@-3  Loop:%s, Alpha1:idx1 = %s:%s; Alpha2:idx2 = %s:%s; Updated to:  Alpha1_New:%s and Alpha2_New:%s and b_new:%s"%(iter,alpha1_idx, old_alpha1, alpha2_idx, old_alpha2, new_alpha1, clipped_new_alpha2,new_b)
+                    #---print "@@@-3  Loop:%s, Alpha1:idx1 = %s:%s; Alpha2:idx2 = %s:%s; Updated to:  Alpha1_New:%s and Alpha2_New:%s and b_new:%s"%(iter,alpha1_idx, old_alpha1, alpha2_idx, old_alpha2, new_alpha1, clipped_new_alpha2,new_b)
                 else:
-                    print "@@@-3 Alpha1:%s does not violate KKT conditions"%old_alpha1
-
+                    #---print "@@@-3 Alpha1:%s does not violate KKT conditions"%old_alpha1
+                    pass
             # Count the undated Alpha for each iteration
-            j = 0
-            for alpha in range(len(self.alphas)):
-                if self.alphas[alpha] != 0.1: j+=1
-            if updated_alpha != j:
-                updated_alpha =j
+            if updated_alpha == 0:
+                passes +=1
+                j = 0
+                for alpha in self.alphas:
+                    if alpha != 0.1:
+                        j += 1
+                print "In iteration %s, no more alphas be updated, in total %s alphas be updated" %(iter, j)
+                #print "Passes = %s"%passes
             else:
-                #print "In iteration %s, no more alphas can be updated, in total %s alphas be updated" %(iter, j)
-                #print self.alphas
-                #break
-                pass
-            if done:
-                print "In iteration %s, no more alphas violate KKT Conditions, in total %s alphas be updated" %(iter, j)
-                break
-            print "In Iteraton %s, %s alphas has been updated" %(iter, j)
+                passes = 0
+            print "In Iteraton %s, %s alphas has been updated" %(iter, updated_alpha)
             print self.alphas
             print "____________________________________________________"
             print ""
@@ -617,7 +635,10 @@ class SVMClassifier:
             KernalType = self.KernalType
         predict_label = []
         for x in self.TestingSampels:
-            val = self._Cal_F(x, KernalType, Mode='Te')
+            if self._Cal_F(x, KernalType, Mode='Te') > 0:
+                val = 1
+            else:
+                val = -1
             predict_label.append(val)
         print "Prediction base on trained Model:"
         self.Write_Test(predict_label)
@@ -648,9 +669,17 @@ class SVMClassifier:
 def main():
 
     model = SVMClassifier()
-    model.LoadData('Testing', Training_source='TrainingSamples2.csv')
-    model._Update_Variables(C=1.0, Sigma=0.1, KernalType='g', alpha_ini=True, Kernal_ini=True)
-    model.Train_Model(Loop=8, KernalType='g',)
+    model.LoadData('Testing', Training_source='TrainingSamples5.csv')
+    model._Update_Variables(C=1.0, Sigma=0.1, T=0.001, Step=0.005, KernalType='g', alpha_ini=True, alpha_val=0.1, Kernal_ini=True )
+    #print model.KernalCatch_Dict
+    '''
+    for alpha1_idx in range(len(model.alphas)):
+        predict = model._Cal_F(alpha1_idx, 'g')
+        Eidx = predict - model.TrainingLabels[alpha1_idx]
+        print "predict is %s"%predict
+        print "Ei is %s"%Eidx
+    '''
+    model.Train_Model(Loop=3, KernalType='g',)
     model.Load_Model()
     model.Test_Model(KernalType='g')
 
