@@ -48,16 +48,23 @@ class SVMClassifier:
             CrossValidation_source = 'CVSamples.csv'
 
         fn = open(Training_source, "r")
+
         for line in fn:
+            xVariable = []
             line = line[:-1]  # Remove the /r/n
             vlist1 = line.split("/r")
-            if vlist1[0]== "": continue #Omit text line
+            if vlist1[0]== "": continue #Omit empty line
             vlist = vlist1[0].split(",")
-            self.TrainingSamples.append([float(vlist[0]), float(vlist[1])])
-            if float(vlist[2])==0:
+            #Get xVariables from Training Set
+            for item in vlist[:-1]:
+                xVariable.append(float(item))
+            self.TrainingSamples.append(xVariable)
+
+            # Get Lables from Training Set
+            if float(vlist[-1])==0:
                 label = -1
             else:
-                label = float(vlist[2])
+                label = float(vlist[-1])
             self.TrainingLabels.append(label)
         print "Loaded %s Training Samples" %len(self.TrainingSamples)
         fn.close()
@@ -65,30 +72,42 @@ class SVMClassifier:
         if model == 'Testing':
             fn = open(Testing_source, 'r')
             for line in fn:
+                xVariable = []
                 line = line[:-1]  # Remove the /r/n
                 vlist1 = line.split("/r")
                 if vlist1[0]== "": continue
                 vlist = vlist1[0].split(",")
-                self.TestingSampels.append([float(vlist[0]), float(vlist[1])])
-                if float(vlist[2]) == 0:
+                # Get xVariables from Testing Set
+                for item in vlist[:-1]:
+                    xVariable.append(float(item))
+                self.TestingSampels.append(xVariable)
+
+                # Get Lables from Testing Set
+                if float(vlist[-1]) == 0:
                     label = -1.0
                 else:
-                    label = float(vlist[2])
+                    label = float(vlist[-1])
                 self.TestingLabels.append(label)
             print "Loaded %s Testing Samples" %len(self.TestingSampels)
             fn.close()
         elif model == 'CV':
             fn = open(CrossValidation_source, 'r')
             for line in fn:
+                xVariable = []
                 line = line[:-1]  # Remove the /r/n
                 vlist1 = line.split("/r")
                 if vlist1[0] == "": continue
                 vlist = vlist1[0].split(",")
-                self.CVSamples.append([float(vlist[0]), float(vlist[1])])
-                if float(vlist[2]) == 0:
+                # Get xVariables from CV Set
+                for item in vlist[:-1]:
+                    xVariable.append(float(item))
+                self.CVSamples.append(xVariable)
+
+                # Get Lables from CV Set
+                if float(vlist[-1]) == 0:
                     label = -1.0
                 else:
-                    label = float(vlist[2])
+                    label = float(vlist[-1])
                 self.CVLabels.append(label)
             print "Loaded %s CV Samples" %len(self.TestingSampels)
             fn.close()
@@ -724,7 +743,7 @@ class SVMClassifier:
         fn.write("Prediciton_Label,Test_Label\n")
         for i in range(len(predict_label)):
             fn.write(str(predict_label[i]) + ','+str(self.TestingLabels[i])+"\n")
-        fn.write("Precsion,%s \n"%Precision)
+        fn.write("Precision,%s \n"%Precision)
         fn.write("Recall,%s \n"%Recall)
         print 'Test Result has been writen to %s'%destination
         fn.close()
@@ -772,8 +791,9 @@ class SVMClassifier:
             for line in fn:
                 line = line[:-1]  # Remove the /r/n
                 vlist1 = line.split("/r")
-                if vlist1[0] == "" or vlist1[0]=='Precision' or vlist1[0]=='Recall': continue
+                if vlist1[0] == "": continue
                 vlist = vlist1[0].split(",")
+                if vlist[0] == 'Precision' or vlist[0] == 'Recall':continue
                 if float(vlist[0])==1.0:
                     if self.TestingLabels[i]==1:
                         TP += 1
@@ -808,13 +828,13 @@ def main():
 
 def run():
     model = SVMClassifier()
-    model.LoadData('Testing', Training_source='TrainingSamples4.csv', Testing_source='TrainingSamples4.csv')
-    model._Update_Variables(C=10.0, Sigma=0.05, T=0.001, Step=0.01, KernalType='g', alpha_ini=True, alpha_val=0.1,
+    model.LoadData('Testing', Training_source='Iris.csv', Testing_source='Iris.csv')
+    model._Update_Variables(C=10.0, Sigma=1.0, T=0.001, Step=0.01, KernalType='g', alpha_ini=True, alpha_val=0.1,
                             Kernal_ini=True)
-    model.Train_Model(Loop=3, Model_File='SVMModel324.csv')
-    model.Load_Model()
-    model.Test_Model(KernalType='g', Output='SVMTest-TrainingSample4.csv')
-    #model.Performance_Diag(From='f')
+    model.Train_Model(Loop=3, Model_File='SVMModelIris.csv')
+    model.Load_Model('SVMModelIris.csv')
+    model.Test_Model(KernalType='g', Output='SVMTest-Iris.csv')
+    #model.Performance_Diag(From='f', Result='SVMTest-Iris.csv')
 
 if __name__ == '__main__':
     main()
