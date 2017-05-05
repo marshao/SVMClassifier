@@ -35,6 +35,8 @@ class SVMClassifier:
         self.alpha1Idx = 0                 #Index of Alpha 1
         self.alpha2Idx = 0                 #Index of Alpha 2
         self.PredictResult = []            #List to save predictions
+        self.EidxTraining = []  # list to catch Eidx of Training Set
+        self.EidxCV = []  # List to catch Edix of CV set
 
     def LoadData(self, model, Training_source=None, Testing_source=None, CrossValidation_source=None):
         '''Load Samples Data into Numpy Matrix
@@ -232,12 +234,18 @@ class SVMClassifier:
                         self.alphas = alpha_val
                     else:
                         self.alphas = [alpha_val]*SampleCount
-                elif len(self.alphas) == len(alpha_val):
-                    self.alphas = alpha_val
                 else:
-                    print "Model does not match with Training Samples."
-
-
+                    # There is also two situtions:
+                    # 1. alpha_val is a float, then this is alpha initializtion
+                    # 2. alpha_val is a list, them this is load alpha from modle file
+                    self.alphas = alpha_val
+                    if isinstance(alpha_val, list):
+                        if len(self.alphas) == len(alpha_val):
+                            self.alphas = alpha_val
+                        else:
+                            print "Model does not match with Training Samples."
+                    else:
+                        self.alphas = [alpha_val] * SampleCount
 
     def _Find_Alpha2(self, idx1, E1, KernalType = None):
         '''Find Alpha2 when Alpha1 is decided
@@ -651,6 +659,7 @@ class SVMClassifier:
                     pass
             # Count the undated Alpha for each iteration
             print ''
+            #if iter > 300:break
             if updated_alpha == 0:
                 passes +=1
                 j = 0
@@ -732,7 +741,7 @@ class SVMClassifier:
         print ''
         print "Model Prediction is completed"
         self.PredictResult = predict_label
-        Precision, Recall = self.Performance_Diag(From, Result)
+        Precision, Recall, Accuracy = self.Performance_Diag(From, Result)
         self.Write_Test(predict_label, Precision, Recall, destination=Output)
 
     def Write_Test(self, predict_label, Precision = 0.0, Recall=0.0, destination=None):
@@ -810,9 +819,10 @@ class SVMClassifier:
 
         Precision = round(TP/(TP+FP),2)
         Recall = round(TP/(TP + FN),2)
-        print "TP=%s, FP=%s, TN=%s, FN=%s, Precision Rate is %s and Recall Rate is %s"%(TP,FP,TN,FN,Precision, Recall)
-        return Precision, Recall
-
+        Overall_Accuracy = round((TP + TN) / (TP + FP + TN + FN), 2)
+        print "TP=%s, FP=%s, TN=%s, FN=%s, Precision Rate is %s and Recall Rate is %s, Overall Accurate is %s" % (
+        TP, FP, TN, FN, Precision, Recall, Overall_Accuracy)
+        return Precision, Recall, Overall_Accuracy
 
     def pause(self):
         programPause = raw_input("Press any key to continue")
@@ -824,17 +834,40 @@ def main():
     #profile.run("run()", "prof1.txt")
     #p = pstats.Stats('prof1.txt')
     #p.sort_stats('time').print_stats()
-    run()
+    singal_run()
+    #batch_run()
 
-def run():
+
+def singal_run():
     model = SVMClassifier()
-    model.LoadData('Testing', Training_source='Iris.csv', Testing_source='Iris.csv')
-    model._Update_Variables(C=10.0, Sigma=1.0, T=0.001, Step=0.01, KernalType='g', alpha_ini=True, alpha_val=0.1,
+    model.LoadData('Testing', Training_source='StockTrainingSample1.csv', Testing_source='StockTestingSample1.csv')
+    model._Update_Variables(C=4.0, Sigma=0.8, T=0.001, Step=0.01, KernalType='g', alpha_ini=True, alpha_val=0.1,
                             Kernal_ini=True)
-    model.Train_Model(Loop=3, Model_File='SVMModelIris.csv')
-    model.Load_Model('SVMModelIris.csv')
-    model.Test_Model(KernalType='g', Output='SVMTest-Iris.csv')
-    #model.Performance_Diag(From='f', Result='SVMTest-Iris.csv')
+    model.Train_Model(Loop=3, Model_File='StockTrainingModel2.csv')
+    model.Load_Model('StockTrainingModel2.csv')
+    model.Test_Model(KernalType='g', Output='StockTest2.csv')
+
+
+def batch_run():
+    model = SVMClassifier()
+    model.LoadData('Testing', Training_source='StockTrainingSample1.csv', Testing_source='StockTestingSample1.csv')
+    C = [0.6, 0.7, 0.8, 1.0, 1.3, 1.5, 1.8, 2.0, 3.0, 4.0]
+    Sigma = [0.06, 0.08, 0.1, 0.3, 0.5, 0.8, 1.0, 1.5, 2.0]
+    fn = open('StockMultiModelResults.csv', "w+")
+    for each_C in C:
+        for each_Sigma in Sigma:
+            # tmp = []
+            model._Update_Variables(C=each_C, Sigma=each_Sigma, T=0.001, Step=0.01, KernalType='g', alpha_ini=True,
+                                    alpha_val=0.1,
+                                    Kernal_ini=True)
+            model.Train_Model(Loop=3, Model_File='StockTrainingModel2.csv')
+            model.Load_Model('StockTrainingModel2.csv')
+            model.Test_Model(KernalType='g', Output='StockTest2.csv')
+            Precesion, Recall, Accuracy = model.Performance_Diag()
+            fn.writelines('C: %s,  Sigma: %s, Precesion: %s, Recall: %s, Accuracy: %s \n' % (
+                each_C, each_Sigma, Precesion, Recall, Accuracy))
+    fn.close()
+
 
 if __name__ == '__main__':
     main()

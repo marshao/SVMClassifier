@@ -488,6 +488,34 @@ class C_GettingData:
         #df_stock_records = pandas.read_sql(sql_fetch_records, con=self._engine,params=(period, stock_code, row_count))
         return  df_stock_records
 
+    def load_data_from_file_into_df(self, df_stock_records=None, source_file=None):
+        '''
+        Load data from file, (Capital data)
+        :param df_stock_records:
+        :return:
+        '''
+        if df_stock_records is None:
+            return
+
+        if source_file is None:
+            source_file = 'Capital.csv'
+
+        fn = open(source_file, 'r')
+        for line in fn:
+            line = line[:-1]  # Remove the /r/n
+            vlist1 = line.split("/r")
+            if vlist1[0] == "": continue
+            vlist = vlist1[0].split(",")
+            quote_time = datetime.datetime.strptime(vlist[0], '%Y-%m-%d')
+            if quote_time in df_stock_records.index:
+                df_stock_records.set_value(quote_time, 'Capital', float(vlist[1]))
+            else:
+                continue
+        fn.close()
+        return df_stock_records
+
+
+
     def data_normalization(self, df_records=None):
         '''
         This is the function to normalize data into [0-1], using Z normal method.
@@ -546,6 +574,8 @@ class C_GettingData:
             i+=1
 
         df_daily_record = df_daily_record.loc[df_daily_record['PB']!= 0]
+
+        # print df_daily_record
         return df_daily_record
 
 
@@ -565,8 +595,10 @@ def main():
 
     #-------------------------------------------------------
     df = pp.load_data_from_db()
+    df = pp.load_data_from_file_into_df(df)
+    df = pp._cal_PBPE(df)
     df = pp.data_normalization(df)
-    pp._cal_PBPE(df)
+    df.to_csv('stock_data.csv', header=True)
 
 if __name__ == '__main__':
     main()
