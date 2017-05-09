@@ -3,9 +3,8 @@
 
 
 import math
-import sys
-import time
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 class SVMClassifier:
@@ -24,7 +23,7 @@ class SVMClassifier:
         self.T = 0.001               #Tolerance(Accuracy) of System
         self.C = 10.0                   #Penotal Coefficients
         self.Step = 0.01             #Min step length of alpha1
-        self.Loop = 20           #Max iterration times
+        self.Max_iter = 3000  # Max loop time
         self.Models_Dict = []           #Dictonary to Store Models
         self.KernalType = 'g'          # predefine the Kernal Type is linear Kernal
         self.KernalCatch_Dict = {}           #Kernal Catch Values Dictionary
@@ -35,8 +34,13 @@ class SVMClassifier:
         self.alpha1Idx = 0                 #Index of Alpha 1
         self.alpha2Idx = 0                 #Index of Alpha 2
         self.PredictResult = []            #List to save predictions
-        self.EidxTraining = []  # list to catch Eidx of Training Set
-        self.EidxCV = []  # List to catch Edix of CV set
+        self.ModelLearningCurve = []  # list to catch Eidx of Training Set for each model
+        self.Eidx_Training_list = []  # A list to catch Eidx values of Train samples
+        self.Lidx_Training_list = []
+        self.Eidx_Training = 0.0
+        self.Lidx_Training = 0
+        self.Eidx_CV = 0.0
+        self.Lidx_CV = 0
 
     def LoadData(self, model, Training_source=None, Testing_source=None, CrossValidation_source=None):
         '''Load Samples Data into Numpy Matrix
@@ -49,8 +53,17 @@ class SVMClassifier:
         if CrossValidation_source is None:
             CrossValidation_source = 'CVSamples.csv'
 
-        fn = open(Training_source, "r")
+        # Reset all sample catches to 0
+        self.TrainingSamples = []  # Matrix of Training Sample
+        self.TrainingLabels = []  # Matrix of Training Labels
+        self.CVSamples = []  # Matrix of CV samples
+        self.CVLabels = []
+        self.TestingSampels = []  # Matrix of test samples
+        self.TestingLabels = []  # Marix of testing labels
+        self.predicts = []
+        self.Eidx_Training_list = []
 
+        fn = open(Training_source, "r")
         for line in fn:
             xVariable = []
             line = line[:-1]  # Remove the /r/n
@@ -122,7 +135,8 @@ class SVMClassifier:
         pass
 
     def _Update_Variables(self, idx1=None, alpha1=None, idx2=None, alpha2=None, alpha_ini = False, alpha_val=None, b=None, T=None,
-                          C=None, Step=None, Loop=None, Sigma=None, Kernal_ini = False, KernalType = None, PolinomialR=None, Polinomiald=None):
+                          C=None, Step=None, Max_iter=None, Sigma=None, Kernal_ini=False, KernalType=None,
+                          PolinomialR=None, Polinomiald=None):
         '''Update Variables
             idx1: Alpha1
             idx2: Alpha2
@@ -130,7 +144,7 @@ class SVMClassifier:
             T
             C
             Step
-            Loop
+            Max_iter
         '''
         if idx1 != None and alpha1 != None:
             self.alphas[idx1] = alpha1*1.0
@@ -144,8 +158,8 @@ class SVMClassifier:
             self.C = C*1.0
         if Step != None:
             self.Step = Step*1.0
-        if Loop != None:
-            self.Loop = Loop
+        if Max_iter != None:
+            self.Max_iter = Max_iter
 
         if Sigma != None:
             self.GaussinSigma = Sigma*1.0
@@ -184,23 +198,6 @@ class SVMClassifier:
                     stars = 0
                 for idx2 in range(SampleCount):
                     # Initailize the Kernal_Catch into Dictionary
-                    '''
-                    key1 = str(idx1) + '-' + str(idx2)
-                    key2 = str(idx2) + '-' + str(idx1)
-                    x1 = self.TrainingSamples[idx1]
-                    x2 = self.TrainingSamples[idx2]
-                    if self.KernalCatch_Dict.has_key(key1):
-                        continue
-                    if KernalType == 'l':
-                        KernalVal=self._Cal_Linear_Kernal(x1,x2)
-                    elif KernalType == 'g':
-                        KernalVal = self._Cal_Gaussin_Kernal(x1,x2,Sigma)
-                    else:
-                        KernalVal = self._Cal_Polinomial_Kernal(x1,x2,PolinomialR, Polinomiald)
-                    #print "Key: %s, Value: %s"%(key1, KernalVal)
-                    self.KernalCatch_Dict[key1] = KernalVal
-                    self.KernalCatch_Dict[key2] = KernalVal
-                    '''
                     # Initialize the Kernal values into Numpy Matrix
                     x1 = self.TrainingSamples[idx1]
                     x2 = self.TrainingSamples[idx2]
@@ -215,8 +212,6 @@ class SVMClassifier:
                     self.KernalCatch_Matrix.itemset((idx1, idx2), KernalVal)
 
             print ''
-
-
 
         # Initialize or update Alpha list
         if alpha_ini:
@@ -444,15 +439,14 @@ class SVMClassifier:
             KernalType = self.KernalType
 
         # x2 is the sample vector waiting for be predicted.
-        #x2 = self.TrainingSamples[idx]
-        #predict = self._Cal_F(x2, KernalType)
         predict = self._Cal_F(idx, KernalType)
         Eidx = predict - self.TrainingLabels[idx]
-        #print "f(i) is %s"%predict
-        #print "E(i) is %s"%Eidx
-        #print "   idx is %s, and x2 is: %s, predict is :%s, Eidx is : %s" % (idx, x2, predict, Eidx)
-        #print "Eidx for training sample %s is %s"%(idx, Eidx)
+
+        # Update Error catch of this training
+        self.Eidx_Training_list[idx] = abs(Eidx)
         return round(Eidx,5)
+
+
 
     def _Cal_Alpha1(self, idx1, idx2, new_alpha2):
         '''Function to renew Alpha1
@@ -569,14 +563,59 @@ class SVMClassifier:
         #print "   new b is %s"%new_b
         return round(new_b,5)
 
+    def _Cal_Sum_Errors(self, source=None, Diff_mode=None, KernalType=None, Model=None):
+        '''
+        This function is to sum of errors between Predict and YLabel
+        :param source: 'CV' or 'Train' or 'Test'
+        :param Diff_mode: 'Lidx'(Difference between Predict Label and Real Label), 'Eidx'(Difference between Predict Value and Real Label)
+        :param Model: 'Tr' or 'Te', transfer to self._Cal_F to indicate whehter use index to fetch kernal value or use sample vector to calculate kernal value
+        :return:
+        '''
+        if source is None:
+            source = 'Train'
+        if Diff_mode is None:
+            Diff_mode = 'Lidx'
 
+        if source == 'Train':
+            samples = self.TrainingSamples
+            labels = self.TrainingLabels
+        elif source == 'CV':
+            samples = self.CVSamples
+            labels = self.CVLabels
+        elif source == 'Test':
+            samples = self.TestingSampels
+            labels = self.TestingLabels
+        else:
+            print 'No such model'
+            return
 
-    def Train_Model(self, C = None, T=None, Loop = None, KernalType = None, Step=None, Sigma=None, Model_File=None):
+        if Diff_mode == 'Lidx' and source == 'Train':
+            self.Lidx_Training_list = [0] * len(self.TrainingLabels)
+            for i in range(len(samples)):
+                if self._Cal_F(i, KernalType) > 0:
+                    pre_label = 1
+                else:
+                    pre_label = -1
+                self.Lidx_Training_list[i] = abs(pre_label - labels[i])
+            self.Lidx_Training = sum(self.Lidx_Training_list)
+        elif Diff_mode == 'Lidx' and source == 'CV':
+            self.Lidx_CV_list = [0] * len(self.CVLabels)
+            for i in range(len(samples)):
+                if self._Cal_F(samples[i], KernalType, Mode='Te') > 0:
+                    pre_label = 1
+                else:
+                    pre_label = -1
+                self.Lidx_CV_list[i] = abs(pre_label - labels[i])
+            self.Lidx_CV = sum(self.Lidx_CV_list)
+
+    def Train_Model(self, C=None, T=None, Loop=None, KernalType=None, Step=None, Sigma=None, Model_File=None,
+                    Max_iter=None):
         '''Function to train SVM models with training sample set
             C is penalty coefficient with Default value self.C = 10
             T is Tolerance coefficient with Default value self.T=0.001
-            Loop is max times of iteration with Default value self.Loop = 20
+            Max_iter is max times of iteration with Default value self.Max_iter = 3000
             Step is the minimal change of alpha with default value self.Step = 0.001
+            Loop is the max times that the system will tolorance for no alpha be udpated
         '''
         # Setting Default Parameters
         if C is None:
@@ -584,7 +623,8 @@ class SVMClassifier:
         if T is None:
             T = self.T
         if Loop is None:
-            Loop = self.Loop
+            # loop is the times of no alphas be udpated
+            Loop = 3
         if KernalType is None:
             KernalType = self.KernalType
         if Step is None:
@@ -593,13 +633,18 @@ class SVMClassifier:
             sigma = self.GaussinSigma
         if Model_File is None:
             Model_File = 'SVMModel.csv'
+        if Max_iter is None:
+            Max_iter = self.Max_iter
         # Initiate the index of alpha1_idx and alpha2_idx as 0
         alpha1_idx = 0
         alpha2_idx = 0
         old_alpha1 = self.alphas[alpha1_idx]
         old_alpha2 = self.alphas[alpha2_idx]
 
-        #Loop the list of Alpha until the reach the max loop number or all alphas have no furthur change
+        # Set Eidx for this training to 0
+        self.Eidx_Training_list = [0.0] * len(self.TrainingLabels)
+
+        # Max_iter the list of Alpha until the reach the max loop number or all alphas have no furthur change
         iter = 0
         passes = 0
         stars = 0
@@ -653,13 +698,13 @@ class SVMClassifier:
                     self._Update_Variables(idx1=alpha1_idx, alpha1=new_alpha1,
                                            idx2=alpha2_idx, alpha2= clipped_new_alpha2,
                                            b = new_b)
-                    #---print "@@@-3  Loop:%s, Alpha1:idx1 = %s:%s; Alpha2:idx2 = %s:%s; Updated to:  Alpha1_New:%s and Alpha2_New:%s and b_new:%s"%(iter,alpha1_idx, old_alpha1, alpha2_idx, old_alpha2, new_alpha1, clipped_new_alpha2,new_b)
+                    # ---print "@@@-3  Max_iter:%s, Alpha1:idx1 = %s:%s; Alpha2:idx2 = %s:%s; Updated to:  Alpha1_New:%s and Alpha2_New:%s and b_new:%s"%(iter,alpha1_idx, old_alpha1, alpha2_idx, old_alpha2, new_alpha1, clipped_new_alpha2,new_b)
                 else:
                     #---print "@@@-3 Alpha1:%s does not violate KKT conditions"%old_alpha1
                     pass
             # Count the undated Alpha for each iteration
             print ''
-            #if iter > 300:break
+            if iter > Max_iter: break
             if updated_alpha == 0:
                 passes +=1
                 j = 0
@@ -674,6 +719,10 @@ class SVMClassifier:
             print self.alphas
             print "____________________________________________________"
             print ""
+        # Calculate Diff between predict value and y-Labels
+        self.Eidx_Training = sum(self.Eidx_Training_list)
+        # Calculate Diff between predict labels and y-labels
+        self._Cal_Sum_Errors(source='Train', Diff_mode='Lidx', KernalType=KernalType)
         self.Write_Model(Model_File)
 
     def Write_Model(self, destination=None):
@@ -704,9 +753,51 @@ class SVMClassifier:
             alpha_val.append(float(line))
         self._Update_Variables(C=C, Sigma=GaussinSigma,alpha_val=alpha_val, alpha_ini=True)
 
-    def Cross_Validate_Model(self):
-        '''Function to cross validate model with cv sample set'''
-        pass
+    def Cross_Validate_Model(self, KernalType=None, Output=None, From=None, Result=None):
+        '''Function to validate models with CV sample set
+            Output: The output desination file
+            From: The source type of prediction performance analysis
+            Result: The source of predoction performance analysis
+        '''
+        if KernalType is None:
+            KernalType = self.KernalType
+        if Output is None:
+            Output = 'SVMCVTest.csv'
+        if From is None:
+            From = 'l'
+        if Result is None:
+            Result = self.PredictResult
+
+        predict_label = []
+        stars = 0
+        self.Eidx_CV = 0.0
+        print "Model Cross Validation Process is started:"
+        print "--------------------------------------------------------"
+        for x in range(len(self.CVSamples)):
+            stars += 1
+            if stars < 78:
+                print "*",
+            else:
+                print ''
+                stars = 0
+            predict = self._Cal_F(self.CVSamples[x], KernalType, Mode='Te')
+            # print 'predict on CV sample is %s'%predict
+
+            if predict > 0:
+                val = 1
+            else:
+                val = -1
+            predict_label.append(val)
+            self.Eidx_CV += abs(predict - self.CVLabels[x])
+        print ''
+        print "Model Prediction is completed"
+        # Calculate the sum Diff between predict labels and Y-Labels
+        self._Cal_Sum_Errors(source='CV', Diff_mode='Lidx', KernalType=KernalType)
+
+        self.PredictResult = predict_label
+        Result = self.PredictResult
+        Precision, Recall, Accuracy = self.Performance_Diag(From, Result, Model='C')
+        self.Write_Test(predict_label, Precision, Recall, destination=Output, Model='C')
 
     def Test_Model(self, KernalType = None, Output=None, From=None, Result=None):
         '''Function to Test models with test sample set
@@ -722,6 +813,7 @@ class SVMClassifier:
             From = 'l'
         if Result is None:
             Result = self.PredictResult
+
         predict_label = []
         stars = 0
         print "Model Prediction is started:"
@@ -741,17 +833,21 @@ class SVMClassifier:
         print ''
         print "Model Prediction is completed"
         self.PredictResult = predict_label
-        Precision, Recall, Accuracy = self.Performance_Diag(From, Result)
-        self.Write_Test(predict_label, Precision, Recall, destination=Output)
+        Precision, Recall, Accuracy = self.Performance_Diag(From, Result, Model='T')
+        self.Write_Test(predict_label, Precision, Recall, destination=Output, Model='T')
 
-    def Write_Test(self, predict_label, Precision = 0.0, Recall=0.0, destination=None):
+    def Write_Test(self, predict_label, Precision=0.0, Recall=0.0, destination=None, Model='T'):
         '''Write out model configurations to a file'''
+        if Model == 'T':
+            y_labels = self.TestingLabels
+        else:
+            y_labels = self.CVLabels
         if destination is None:
             destination = 'SVMTest.csv'
         fn = open(destination, "w")
         fn.write("Prediciton_Label,Test_Label\n")
         for i in range(len(predict_label)):
-            fn.write(str(predict_label[i]) + ','+str(self.TestingLabels[i])+"\n")
+            fn.write(str(predict_label[i]) + ',' + str(y_labels[i]) + "\n")
         fn.write("Precision,%s \n"%Precision)
         fn.write("Recall,%s \n"%Recall)
         print 'Test Result has been writen to %s'%destination
@@ -761,10 +857,12 @@ class SVMClassifier:
         '''Function to use model to predict values'''
         pass
 
-    def Performance_Diag(self, From=None, Result=None):
+    def Performance_Diag(self, From=None, Result=None, Model=None):
         '''Function to evaluate performance of models
         From: The source of the prediction(List or File)
         Result: The File of prediction result.
+        Model is to differentiate from Testing and CrossValidateion
+        Model value is in ['T','C']
         * Precision = True_Positive/(True_Pos + False_Pos)
         * Recall = True_Pos/(True_Pos _ False_Neg)
         '''
@@ -773,21 +871,30 @@ class SVMClassifier:
         FN=0.0
         TN=0.0
 
+        if Model is None:
+            Model = 'T'
+        if Model == 'T':
+            labels = self.TestingLabels
+        elif Model == 'C':
+            labels = self.CVLabels
+        else:
+            print 'No Such Model in Performance Diag'
+            return
+
         if From is None:
             From = 'l' #Predict results from list
 
         if From is 'l':
             if Result is None:
                 Result = self.PredictResult
-
             for i in range(len(self.PredictResult)):
                 if self.PredictResult[i]==1:
-                    if self.TestingLabels[i]==1:
+                    if labels[i] == 1:
                         TP += 1
                     else:
                         FP += 1
                 else:
-                    if self.TestingLabels[i]==-1:
+                    if labels[i] == -1:
                         TN += 1
                     else:
                         FN += 1
@@ -817,12 +924,47 @@ class SVMClassifier:
         else:
             print "No such option"
 
-        Precision = round(TP/(TP+FP),2)
-        Recall = round(TP/(TP + FN),2)
+        if (TP + FP) == 0:
+            Precision = 0
+        else:
+            Precision = round(TP / (TP + FP), 2)
+        if (TP + FN) == 0:
+            Recall = 0
+        else:
+            Recall = round(TP / (TP + FN), 2)
         Overall_Accuracy = round((TP + TN) / (TP + FP + TN + FN), 2)
         print "TP=%s, FP=%s, TN=%s, FN=%s, Precision Rate is %s and Recall Rate is %s, Overall Accurate is %s" % (
         TP, FP, TN, FN, Precision, Recall, Overall_Accuracy)
         return Precision, Recall, Overall_Accuracy
+
+    def Plot_Learning_Curve(self, model=None, base_parameter=None):
+        '''
+        Plot Learning Curves
+        :return:
+        '''
+        # The least parameter count
+        if model is None:
+            model = 'Parameter'
+            base_parameter = 5
+        yTrain = []
+        yCV = []
+        x = range(1, (len(self.ModelLearningCurve) + 1))
+        for i in range(len(self.ModelLearningCurve)):
+            yTrain.append(self.ModelLearningCurve[i][0])
+            yCV.append(self.ModelLearningCurve[i][1])
+        print x
+        print yTrain
+        print yCV
+
+        plt.plot(x, yTrain, 'ob-', c='g', label=u'TrainingError')
+        plt.plot(x, yCV, 'ob-', c='r', label=u'CVError')
+        for i, j in zip(x, yTrain):
+            plt.annotate(str(j), xy=(i, j))
+        for i, j in zip(x, yCV):
+            plt.annotate(str(j), xy=(i, j))
+        plt.xlabel(u'Number of Parameters')
+        plt.ylabel((u'Sum of Errors'))
+        plt.show()
 
     def pause(self):
         programPause = raw_input("Press any key to continue")
@@ -835,20 +977,21 @@ def main():
     #p = pstats.Stats('prof1.txt')
     #p.sort_stats('time').print_stats()
     singal_run()
-    #batch_run()
+    #batch_test_parameters()
+    # batch_test_sample_sizes()
 
 
 def singal_run():
     model = SVMClassifier()
-    model.LoadData('Testing', Training_source='StockTrainingSample1.csv', Testing_source='StockTestingSample1.csv')
+    model.LoadData('Testing', Training_source='Training_298-30.csv', Testing_source='CV_200-30.csv')
     model._Update_Variables(C=4.0, Sigma=0.8, T=0.001, Step=0.01, KernalType='g', alpha_ini=True, alpha_val=0.1,
-                            Kernal_ini=True)
+                            Kernal_ini=True, Max_iter=3000)
     model.Train_Model(Loop=3, Model_File='StockTrainingModel2.csv')
     model.Load_Model('StockTrainingModel2.csv')
     model.Test_Model(KernalType='g', Output='StockTest2.csv')
 
 
-def batch_run():
+def batch_test_C_Sigma():
     model = SVMClassifier()
     model.LoadData('Testing', Training_source='StockTrainingSample1.csv', Testing_source='StockTestingSample1.csv')
     C = [0.6, 0.7, 0.8, 1.0, 1.3, 1.5, 1.8, 2.0, 3.0, 4.0]
@@ -863,10 +1006,62 @@ def batch_run():
             model.Train_Model(Loop=3, Model_File='StockTrainingModel2.csv')
             model.Load_Model('StockTrainingModel2.csv')
             model.Test_Model(KernalType='g', Output='StockTest2.csv')
-            Precesion, Recall, Accuracy = model.Performance_Diag()
-            fn.writelines('C: %s,  Sigma: %s, Precesion: %s, Recall: %s, Accuracy: %s \n' % (
-                each_C, each_Sigma, Precesion, Recall, Accuracy))
+            Precesion, Recall, Accuracy = model.Performance_Diag(Model='T')
+            model.ModelLearningCurve.append([model.Eidx_Training, model.Eidx_CV])
+            fn.writelines(
+                'C: %s,  Sigma: %s, Precesion: %s, Recall: %s, Accuracy: %s, Eidx_Training: %s, Eidx_CV: %s \n' % (
+                    each_C, each_Sigma, Precesion, Recall, Accuracy, model.Eidx_Training, model.Eidx_CV))
     fn.close()
+
+def batch_test_parameters():
+    model = SVMClassifier()
+    TrainingSource = ['StockTrainingParameter1.csv', 'StockTrainingParameter2.csv', 'StockTrainingParameter3.csv',
+                      'StockTrainingParameter4.csv', 'StockTrainingParameter5.csv', 'StockTrainingParameter6.csv']
+    CVSource = ['StockCVParameter1.csv', 'StockCVParameter2.csv', 'StockCVParameter3.csv', 'StockCVParameter4.csv',
+                'StockCVParameter5.csv', 'StockCVParameter6.csv']
+    fn = open('StockMultiParameterResults.csv', "w+")
+
+    for i in range(len(TrainingSource)):
+        model.LoadData('CV', Training_source=TrainingSource[i], CrossValidation_source=CVSource[i])
+        model._Update_Variables(C=4.0, Sigma=0.8, T=0.001, Step=0.01, KernalType='g', alpha_ini=True,
+                                alpha_val=0.1,
+                                Kernal_ini=True, Max_iter=3000)
+        model.Train_Model(Loop=3, Model_File='StockMultiParameterModel1.csv')
+        model.Load_Model('StockMultiParameterModel1.csv')
+        model.Cross_Validate_Model(KernalType='g', Output='StockMultiParameterTest1.csv')
+        Precesion, Recall, Accuracy = model.Performance_Diag(Model='C')
+        model.ModelLearningCurve.append([round(model.Eidx_Training, 4), round(model.Eidx_CV, 4)])
+        fn.writelines(
+            'C: %s,  Sigma: %s, Precesion: %s, Recall: %s, Accuracy: %s, Eidx_Training: %s, Eidx_CV: %s \n' % (
+                4.0, 0.8, Precesion, Recall, Accuracy, model.Eidx_Training, model.Eidx_CV))
+    fn.close()
+    model.Plot_Learning_Curve()
+
+
+def batch_test_sample_sizes():
+    model = SVMClassifier()
+    TrainingSource = ['Training_100-30.csv', 'Training_150-30.csv', 'Training_200-30.csv', 'Training_250-30.csv',
+                      'Training_298-30.csv']
+    CVSource = ['CV_200-30.csv', 'CV_200-30.csv', 'CV_200-30.csv', 'CV_200-30.csv', 'CV_200-30.csv']
+    fn = open('StockSampleSizesResults.csv', "w+")
+
+    for i in range(len(TrainingSource)):
+        model.LoadData('CV', Training_source=TrainingSource[i], CrossValidation_source=CVSource[i])
+        model._Update_Variables(C=4.0, Sigma=0.8, T=0.001, Step=0.01, KernalType='g', alpha_ini=True,
+                                alpha_val=0.1,
+                                Kernal_ini=True, Max_iter=3000)
+        model.Train_Model(Loop=3, Model_File='StockSampleSizesModel1.csv')
+        model.Load_Model('StockSampleSizesModel1.csv')
+        model.Cross_Validate_Model(KernalType='g', Output='StockSampleSizesTest1.csv')
+        Precesion, Recall, Accuracy = model.Performance_Diag(Model='C')
+        # model.ModelLearningCurve.append([round(model.Eidx_Training,4), round(model.Eidx_CV,4)])
+        model.ModelLearningCurve.append([round(model.Lidx_Training, 4), round(model.Lidx_CV, 4)])
+        fn.writelines(
+            'C: %s,  Sigma: %s, Precesion: %s, Recall: %s, Accuracy: %s, Eidx_Training: %s, Eidx_CV: %s, Lidx_Training: %s, Lidx_CV: %s\n' % (
+                4.0, 0.8, Precesion, Recall, Accuracy, model.Eidx_Training, model.Eidx_CV, model.Lidx_Training,
+                model.Lidx_CV))
+    fn.close()
+    model.Plot_Learning_Curve()
 
 
 if __name__ == '__main__':
