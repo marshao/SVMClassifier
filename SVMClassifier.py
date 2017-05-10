@@ -976,14 +976,14 @@ def main():
     #profile.run("run()", "prof1.txt")
     #p = pstats.Stats('prof1.txt')
     #p.sort_stats('time').print_stats()
-    singal_run()
+    # singal_run()
     #batch_test_parameters()
-    # batch_test_sample_sizes()
+    batch_test_sample_sizes()
 
 
 def singal_run():
     model = SVMClassifier()
-    model.LoadData('Testing', Training_source='Training_298-30.csv', Testing_source='CV_200-30.csv')
+    model.LoadData('Testing', Training_source='Training_100-30.csv', Testing_source='CV_200-30.csv')
     model._Update_Variables(C=4.0, Sigma=0.8, T=0.001, Step=0.01, KernalType='g', alpha_ini=True, alpha_val=0.1,
                             Kernal_ini=True, Max_iter=3000)
     model.Train_Model(Loop=3, Model_File='StockTrainingModel2.csv')
@@ -1042,7 +1042,7 @@ def batch_test_sample_sizes():
     model = SVMClassifier()
     TrainingSource = ['Training_100-30.csv', 'Training_150-30.csv', 'Training_200-30.csv', 'Training_250-30.csv',
                       'Training_298-30.csv']
-    CVSource = ['CV_200-30.csv', 'CV_200-30.csv', 'CV_200-30.csv', 'CV_200-30.csv', 'CV_200-30.csv']
+    CVSource = ['CV_100-30.csv', 'CV_100-30.csv', 'CV_100-30.csv', 'CV_100-30.csv', 'CV_100-30.csv']
     fn = open('StockSampleSizesResults.csv', "w+")
 
     for i in range(len(TrainingSource)):
