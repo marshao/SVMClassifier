@@ -2,10 +2,10 @@
 # -*- coding: utf8 -*-
 
 
-import math
+import math, time
 import numpy as np
 import matplotlib.pyplot as plt
-
+import multiprocessing as mp
 
 class SVMClassifier:
 
@@ -887,8 +887,8 @@ class SVMClassifier:
         if From is 'l':
             if Result is None:
                 Result = self.PredictResult
-            for i in range(len(self.PredictResult)):
-                if self.PredictResult[i]==1:
+            for i in range(len(Result)):
+                if Result[i] == 1:
                     if labels[i] == 1:
                         TP += 1
                     else:
@@ -978,24 +978,32 @@ def main():
     #p.sort_stats('time').print_stats()
     # singal_run()
     #batch_test_parameters()
-    batch_test_sample_sizes()
+    # batch_test_sample_sizes()
+    batch_test_C_Sigma()
 
 
 def singal_run():
     model = SVMClassifier()
-    model.LoadData('Testing', Training_source='Training_100-30.csv', Testing_source='CV_200-30.csv')
-    model._Update_Variables(C=4.0, Sigma=0.8, T=0.001, Step=0.01, KernalType='g', alpha_ini=True, alpha_val=0.1,
+    model.LoadData('CV', Training_source='TrainingLO.csv', CrossValidation_source='CVLO.csv')
+    model._Update_Variables(C=1.0, Sigma=0.1, T=0.001, Step=0.01, KernalType='g', alpha_ini=True, alpha_val=0.1,
                             Kernal_ini=True, Max_iter=3000)
     model.Train_Model(Loop=3, Model_File='StockTrainingModel2.csv')
     model.Load_Model('StockTrainingModel2.csv')
-    model.Test_Model(KernalType='g', Output='StockTest2.csv')
+    model.Cross_Validate_Model(KernalType='g', Output='StockTest2.csv')
+    # model.Test_Model(KernalType='g', Output='StockTest2.csv')
+    Precesion, Recall, Accuracy = model.Performance_Diag(Model='C')
+    print(
+        'C: %s,  Sigma: %s, Precesion: %s, Recall: %s, Accuracy: %s, Eidx_Training: %s, Eidx_CV: %s \n' % (
+            1.0, 0.1, Precesion, Recall, Accuracy, model.Eidx_Training, model.Eidx_CV))
 
 
 def batch_test_C_Sigma():
     model = SVMClassifier()
-    model.LoadData('Testing', Training_source='StockTrainingSample1.csv', Testing_source='StockTestingSample1.csv')
-    C = [0.6, 0.7, 0.8, 1.0, 1.3, 1.5, 1.8, 2.0, 3.0, 4.0]
+    model.LoadData('CV', Training_source='TrainingLO.csv', CrossValidation_source='CVLO.csv')
+    #C = [0.6, 0.7, 0.8, 1.0, 1.3, 1.5, 1.8, 2.0, 3.0, 4.0]
     Sigma = [0.06, 0.08, 0.1, 0.3, 0.5, 0.8, 1.0, 1.5, 2.0]
+    C = [1.0]
+    #Sigma = [0.1]
     fn = open('StockMultiModelResults.csv', "w+")
     for each_C in C:
         for each_Sigma in Sigma:
@@ -1005,20 +1013,72 @@ def batch_test_C_Sigma():
                                     Kernal_ini=True)
             model.Train_Model(Loop=3, Model_File='StockTrainingModel2.csv')
             model.Load_Model('StockTrainingModel2.csv')
-            model.Test_Model(KernalType='g', Output='StockTest2.csv')
-            Precesion, Recall, Accuracy = model.Performance_Diag(Model='T')
+            model.Cross_Validate_Model(KernalType='g', Output='StockTest2.csv')
+            Precesion, Recall, Accuracy = model.Performance_Diag(Model='C')
             model.ModelLearningCurve.append([model.Eidx_Training, model.Eidx_CV])
             fn.writelines(
                 'C: %s,  Sigma: %s, Precesion: %s, Recall: %s, Accuracy: %s, Eidx_Training: %s, Eidx_CV: %s \n' % (
                     each_C, each_Sigma, Precesion, Recall, Accuracy, model.Eidx_Training, model.Eidx_CV))
     fn.close()
+    model.Plot_Learning_Curve()
+
+
+def multi_batch_test_C_Sigma():
+    model = SVMClassifier()
+    model.LoadData('CV', Training_source='TrainingLO.csv', CrossValidation_source='CVLO.csv')
+    # C = [0.6, 0.7, 0.8, 1.0, 1.3, 1.5, 1.8, 2.0, 3.0, 4.0]
+    Sigma = [0.06, 0.08, 0.1, 0.3, 0.5, 0.8, 1.0, 1.5, 2.0]
+    C = [1.0]
+    # Sigma = [0.1]
+    processors = 7
+    processes = []
+    index_beg = 0
+
+    # fn = open('StockMultiModelResults.csv', "w+")
+    for each_C in C:
+        for each_Sigma in Sigma:
+            p = mp.Process(target=task, args=(each_C, each_Sigma,))
+            processes.append(p)
+            # model._Update_Variables(C=each_C, Sigma=each_Sigma, T=0.001, Step=0.01, KernalType='g', alpha_ini=True,
+            #                         alpha_val=0.1,
+            #                         Kernal_ini=True)
+            # model.Train_Model(Loop=3, Model_File='StockTrainingModel2.csv')
+            # model.Load_Model('StockTrainingModel2.csv')
+            # model.Cross_Validate_Model(KernalType='g', Output='StockTest2.csv')
+            # Precesion, Recall, Accuracy = model.Performance_Diag(Model='C')
+            # model.ModelLearningCurve.append([model.Eidx_Training, model.Eidx_CV])
+            # fn.writelines(
+            #    'C: %s,  Sigma: %s, Precesion: %s, Recall: %s, Accuracy: %s, Eidx_Training: %s, Eidx_CV: %s \n' % (
+            #        each_C, each_Sigma, Precesion, Recall, Accuracy, model.Eidx_Training, model.Eidx_CV))
+    # fn.close()
+    processes_pool(tasks=processes, processors=processors)
+    model.Plot_Learning_Curve()
+
+
+def task(each_C, each_Sigma):
+    model = SVMClassifier()
+    fn = open('StockMultiModelResults.csv', "w+")
+    model._Update_Variables(C=each_C, Sigma=each_Sigma, T=0.001, Step=0.01, KernalType='g', alpha_ini=True,
+                            alpha_val=0.1,
+                            Kernal_ini=True)
+    model.Train_Model(Loop=3, Model_File='StockTrainingModel2.csv')
+    model.Load_Model('StockTrainingModel2.csv')
+    model.Cross_Validate_Model(KernalType='g', Output='StockTest2.csv')
+    Precesion, Recall, Accuracy = model.Performance_Diag(Model='C')
+    model.ModelLearningCurve.append([model.Eidx_Training, model.Eidx_CV])
+    fn.writelines(
+        'C: %s,  Sigma: %s, Precesion: %s, Recall: %s, Accuracy: %s, Eidx_Training: %s, Eidx_CV: %s \n' % (
+            each_C, each_Sigma, Precesion, Recall, Accuracy, model.Eidx_Training, model.Eidx_CV))
+    fn.close()
 
 def batch_test_parameters():
     model = SVMClassifier()
-    TrainingSource = ['StockTrainingParameter1.csv', 'StockTrainingParameter2.csv', 'StockTrainingParameter3.csv',
-                      'StockTrainingParameter4.csv', 'StockTrainingParameter5.csv', 'StockTrainingParameter6.csv']
-    CVSource = ['StockCVParameter1.csv', 'StockCVParameter2.csv', 'StockCVParameter3.csv', 'StockCVParameter4.csv',
-                'StockCVParameter5.csv', 'StockCVParameter6.csv']
+    # TrainingSource = ['StockTrainingParameter1.csv', 'StockTrainingParameter2.csv', 'StockTrainingParameter3.csv',
+    #                  'StockTrainingParameter4.csv', 'StockTrainingParameter5.csv', 'StockTrainingParameter6.csv']
+    # CVSource = ['StockCVParameter1.csv', 'StockCVParameter2.csv', 'StockCVParameter3.csv', 'StockCVParameter4.csv',
+    #            'StockCVParameter5.csv', 'StockCVParameter6.csv']
+    TrainingSource = ['TrainingHO.csv', 'TrainingLO.csv']
+    CVSource = ['CVHO.csv', 'CVLO.csv']
     fn = open('StockMultiParameterResults.csv', "w+")
 
     for i in range(len(TrainingSource)):
@@ -1063,6 +1123,47 @@ def batch_test_sample_sizes():
     fn.close()
     model.Plot_Learning_Curve()
 
+
+def processes_pool(tasks, processors):
+    # This is a self made Multiprocess pool
+    task_total = len(tasks)
+    loop_total = task_total / processors
+    # print "task total is %s, loop_total is %s" % (task_total, loop_total)
+    alive = True
+    task_finished = 0
+    task_alive = 0
+    task_remain = task_total - task_finished
+    count = 0
+    i = 0
+    while i <= loop_total:
+        # print "This is the %s round" % i
+        for j in range(processors):
+            k = j + processors * i
+            # print "executing task %s" % k
+            if k == task_total:
+                break
+            tasks[k].start()
+            j += 1
+
+        for j in range(processors):
+            k = j + processors * i
+            if k == task_total:
+                break
+            tasks[k].join()
+            j += 1
+
+        while alive == True:
+            n = 0
+            alive = False
+            for j in range(processors):
+                k = j + processors * i
+                if k == task_total:
+                    # print "This is the %s round of loop"%i
+                    break
+                if tasks[k].is_alive():
+                    alive = True
+                time.sleep(1)
+        i += 1
 
 if __name__ == '__main__':
     main()

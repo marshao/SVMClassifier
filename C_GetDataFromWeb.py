@@ -3,14 +3,14 @@
 
 __metclass__ = type
 
-
-import os, time, pandas, urllib, re
+import time, pandas, urllib, re
 import datetime
 from sqlalchemy import create_engine, Table, Column, MetaData
 from sqlalchemy.sql import select, and_, or_, not_
 from apscheduler.schedulers.background import BackgroundScheduler
 import multiprocessing as mp
 import logging
+from math import pow
 
 
 class C_GettingData:
@@ -583,6 +583,21 @@ class C_GettingData:
         # print df_daily_record
         return df_daily_record
 
+    def _add_higher_degree_parameters(self, df, degree=2):
+        '''
+        Add higher order parameters in to df
+        :param df:
+        :return:
+        '''
+        for column in df:
+            print column
+            if column != 'id_tb_StockXPeriodRecords' and isinstance(df[column][0], str) is False:
+                # pow(column, 2)
+                new_column = column + '-Order%s' % degree
+                # In here, df[column] is a series, df.pow will not be working
+                df[new_column] = df[column].pow(degree)
+        return df
+
 
 def main():
     pp = C_GettingData()
@@ -603,6 +618,7 @@ def main():
     df = pp.load_data_from_db()
     df = pp.load_data_from_file_into_df(df, source_file='Capital2.csv')
     df = pp._cal_PBPE(df)
+    df = pp._add_higher_degree_parameters(df)
     df = pp.data_normalization(df)
     df.to_csv('stock_data2.csv', header=True)
 

@@ -1,6 +1,2 @@
-C: 4.0,  Sigma: 0.8, Precesion: 0.65, Recall: 0.61, Accuracy: 0.71, Eidx_Training: 112.72984, Eidx_CV: 39.44516 
-C: 4.0,  Sigma: 0.8, Precesion: 0.4, Recall: 1.0, Accuracy: 0.4, Eidx_Training: 587.72895, Eidx_CV: 171.67391 
-C: 4.0,  Sigma: 0.8, Precesion: 0.48, Recall: 0.89, Accuracy: 0.58, Eidx_Training: 140.75102, Eidx_CV: 47.78903 
-C: 4.0,  Sigma: 0.8, Precesion: 0.41, Recall: 1.0, Accuracy: 0.42, Eidx_Training: 272.60192, Eidx_CV: 78.01335 
-C: 4.0,  Sigma: 0.8, Precesion: 0.5, Recall: 0.89, Accuracy: 0.6, Eidx_Training: 138.26862, Eidx_CV: 47.1848 
-C: 4.0,  Sigma: 0.8, Precesion: 0.44, Recall: 0.89, Accuracy: 0.51, Eidx_Training: 194.98427, Eidx_CV: 61.51841 
+C: 4.0,  Sigma: 0.8, Precesion: 0.64, Recall: 0.9, Accuracy: 0.76, Eidx_Training: 168.11432, Eidx_CV: 47.94121 
+C: 4.0,  Sigma: 0.8, Precesion: 0.4, Recall: 1.0, Accuracy: 0.4, Eidx_Training: 416.94273, Eidx_CV: 98.46474 
