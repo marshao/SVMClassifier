@@ -17,7 +17,7 @@ class SVMClassifier:
         self.TrainingLabels = []  # Matrix of Training Labels
         self.CVSamples = []       #Matrix of CV samples
         self.CVLabels = []
-        self.TestingSampels = []     #Matrix of test samples
+        self.TestingSamples = []  # Matrix of test samples
         self.TestingLabels = []       #Marix of testing labels
         self.predicts = []  #Matrix of predicts
         self.T = 0.001               #Tolerance(Accuracy) of System
@@ -58,7 +58,7 @@ class SVMClassifier:
         self.TrainingLabels = []  # Matrix of Training Labels
         self.CVSamples = []  # Matrix of CV samples
         self.CVLabels = []
-        self.TestingSampels = []  # Matrix of test samples
+        self.TestingSamples = []  # Matrix of test samples
         self.TestingLabels = []  # Marix of testing labels
         self.predicts = []
         self.Eidx_Training_list = []
@@ -95,7 +95,7 @@ class SVMClassifier:
                 # Get xVariables from Testing Set
                 for item in vlist[:-1]:
                     xVariable.append(float(item))
-                self.TestingSampels.append(xVariable)
+                self.TestingSamples.append(xVariable)
 
                 # Get Lables from Testing Set
                 if float(vlist[-1]) == 0:
@@ -103,7 +103,7 @@ class SVMClassifier:
                 else:
                     label = float(vlist[-1])
                 self.TestingLabels.append(label)
-            print "Loaded %s Testing Samples" %len(self.TestingSampels)
+            print "Loaded %s Testing Samples" % len(self.TestingSamples)
             fn.close()
         elif model == 'CV':
             fn = open(CrossValidation_source, 'r')
@@ -124,7 +124,7 @@ class SVMClassifier:
                 else:
                     label = float(vlist[-1])
                 self.CVLabels.append(label)
-            print "Loaded %s CV Samples" %len(self.TestingSampels)
+            print "Loaded %s CV Samples" % len(self.CVSamples)
             fn.close()
         else:
             pass
@@ -583,7 +583,7 @@ class SVMClassifier:
             samples = self.CVSamples
             labels = self.CVLabels
         elif source == 'Test':
-            samples = self.TestingSampels
+            samples = self.TestingSamples
             labels = self.TestingLabels
         else:
             print 'No such model'
@@ -796,7 +796,7 @@ class SVMClassifier:
 
         self.PredictResult = predict_label
         Result = self.PredictResult
-        Precision, Recall, Accuracy = self.Performance_Diag(From, Result, Model='C')
+        Precision, Recall, Accuracy, TP, FP, TN, FN = self.Performance_Diag(From, Result, Model='C')
         self.Write_Test(predict_label, Precision, Recall, destination=Output, Model='C')
 
     def Test_Model(self, KernalType = None, Output=None, From=None, Result=None):
@@ -818,7 +818,7 @@ class SVMClassifier:
         stars = 0
         print "Model Prediction is started:"
         print "--------------------------------------------------------"
-        for x in self.TestingSampels:
+        for x in self.TestingSamples:
             stars += 1
             if stars < 78:
                 print "*",
@@ -833,7 +833,7 @@ class SVMClassifier:
         print ''
         print "Model Prediction is completed"
         self.PredictResult = predict_label
-        Precision, Recall, Accuracy = self.Performance_Diag(From, Result, Model='T')
+        Precision, Recall, Accuracy, TP, FP, TN, FN = self.Performance_Diag(From, Result, Model='T')
         self.Write_Test(predict_label, Precision, Recall, destination=Output, Model='T')
 
     def Write_Test(self, predict_label, Precision=0.0, Recall=0.0, destination=None, Model='T'):
@@ -935,7 +935,7 @@ class SVMClassifier:
         Overall_Accuracy = round((TP + TN) / (TP + FP + TN + FN), 2)
         print "TP=%s, FP=%s, TN=%s, FN=%s, Precision Rate is %s and Recall Rate is %s, Overall Accurate is %s" % (
         TP, FP, TN, FN, Precision, Recall, Overall_Accuracy)
-        return Precision, Recall, Overall_Accuracy
+        return Precision, Recall, Overall_Accuracy, TP, FP, TN, FN
 
     def Plot_Learning_Curve(self, model=None, base_parameter=None):
         '''
@@ -952,9 +952,7 @@ class SVMClassifier:
         for i in range(len(self.ModelLearningCurve)):
             yTrain.append(self.ModelLearningCurve[i][0])
             yCV.append(self.ModelLearningCurve[i][1])
-        print x
-        print yTrain
-        print yCV
+
 
         plt.plot(x, yTrain, 'ob-', c='g', label=u'TrainingError')
         plt.plot(x, yCV, 'ob-', c='r', label=u'CVError')
@@ -979,7 +977,8 @@ def main():
     # singal_run()
     #batch_test_parameters()
     # batch_test_sample_sizes()
-    batch_test_C_Sigma()
+    # batch_test_C_Sigma()
+    multi_batch_test_C_Sigma()
 
 
 def singal_run():
@@ -991,10 +990,10 @@ def singal_run():
     model.Load_Model('StockTrainingModel2.csv')
     model.Cross_Validate_Model(KernalType='g', Output='StockTest2.csv')
     # model.Test_Model(KernalType='g', Output='StockTest2.csv')
-    Precesion, Recall, Accuracy = model.Performance_Diag(Model='C')
+    Precesion, Recall, Accuracy, TP, FP, TN, FN = model.Performance_Diag(Model='C')
     print(
-        'C: %s,  Sigma: %s, Precesion: %s, Recall: %s, Accuracy: %s, Eidx_Training: %s, Eidx_CV: %s \n' % (
-            1.0, 0.1, Precesion, Recall, Accuracy, model.Eidx_Training, model.Eidx_CV))
+        'C: %s,  Sigma: %s, TP:%s, FP:%s, TN:%s, FN:%s, Precesion: %s, Recall: %s, Accuracy: %s, Eidx_Training: %s, Eidx_CV: %s \n' % (
+            1.0, 0.1, TP, FP, TN, FN, Precesion, Recall, Accuracy, model.Eidx_Training, model.Eidx_CV))
 
 
 def batch_test_C_Sigma():
@@ -1014,62 +1013,67 @@ def batch_test_C_Sigma():
             model.Train_Model(Loop=3, Model_File='StockTrainingModel2.csv')
             model.Load_Model('StockTrainingModel2.csv')
             model.Cross_Validate_Model(KernalType='g', Output='StockTest2.csv')
-            Precesion, Recall, Accuracy = model.Performance_Diag(Model='C')
+            Precesion, Recall, Accuracy, TP, FP, TN, FN = model.Performance_Diag(Model='C')
             model.ModelLearningCurve.append([model.Eidx_Training, model.Eidx_CV])
             fn.writelines(
-                'C: %s,  Sigma: %s, Precesion: %s, Recall: %s, Accuracy: %s, Eidx_Training: %s, Eidx_CV: %s \n' % (
-                    each_C, each_Sigma, Precesion, Recall, Accuracy, model.Eidx_Training, model.Eidx_CV))
+                'C: %s,  Sigma: %s, TP:%s, FP:%s, TN:%s, FN:%s, Precesion: %s, Recall: %s, Accuracy: %s, Eidx_Training: %s, Eidx_CV: %s \n' % (
+                    each_C, each_Sigma, TP, FP, TN, FN, Precesion, Recall, Accuracy, model.Eidx_Training,
+                    model.Eidx_CV))
     fn.close()
     model.Plot_Learning_Curve()
 
 
 def multi_batch_test_C_Sigma():
     model = SVMClassifier()
-    model.LoadData('CV', Training_source='TrainingLO.csv', CrossValidation_source='CVL.csv')
+    # model.LoadData('CV', Training_source='TrainingHO.csv', CrossValidation_source='CVH.csv')
     # C = [0.6, 0.7, 0.8, 1.0, 1.3, 1.5, 1.8, 2.0, 3.0, 4.0]
     Sigma = [0.06, 0.08, 0.1, 0.3, 0.5, 0.8, 1.0, 1.5, 2.0]
+    #Sigma = [0.06, 0.08]
     C = [1.0]
-    # Sigma = [0.1]
+    #Sigma = [0.1]
     processors = 7
     processes = []
-    index_beg = 0
-
+    output_que = mp.Queue()
+    fn = open('StockMultiC-Sigma-Results.csv', "w+")
     # fn = open('StockMultiModelResults.csv', "w+")
     for each_C in C:
         for each_Sigma in Sigma:
-            p = mp.Process(target=task, args=(each_C, each_Sigma,))
+            p = mp.Process(target=task, args=(model, each_C, each_Sigma, fn, output_que))
             processes.append(p)
-            # model._Update_Variables(C=each_C, Sigma=each_Sigma, T=0.001, Step=0.01, KernalType='g', alpha_ini=True,
-            #                         alpha_val=0.1,
-            #                         Kernal_ini=True)
-            # model.Train_Model(Loop=3, Model_File='StockTrainingModel2.csv')
-            # model.Load_Model('StockTrainingModel2.csv')
-            # model.Cross_Validate_Model(KernalType='g', Output='StockTest2.csv')
-            # Precesion, Recall, Accuracy = model.Performance_Diag(Model='C')
-            # model.ModelLearningCurve.append([model.Eidx_Training, model.Eidx_CV])
-            # fn.writelines(
-            #    'C: %s,  Sigma: %s, Precesion: %s, Recall: %s, Accuracy: %s, Eidx_Training: %s, Eidx_CV: %s \n' % (
-            #        each_C, each_Sigma, Precesion, Recall, Accuracy, model.Eidx_Training, model.Eidx_CV))
-    # fn.close()
+
     processes_pool(tasks=processes, processors=processors)
+
+    for i in range(output_que.qsize()):
+        content = output_que.get()
+        model.ModelLearningCurve.append([content[0], content[1]])
+        fn.writelines(content[2])
+
+    fn.close()
     model.Plot_Learning_Curve()
 
 
-def task(each_C, each_Sigma):
-    model = SVMClassifier()
-    fn = open('StockMultiModelResults.csv', "w+")
-    model._Update_Variables(C=each_C, Sigma=each_Sigma, T=0.001, Step=0.01, KernalType='g', alpha_ini=True,
+def task(model, each_C, each_Sigma, fn, output_que):
+    TaskModel = SVMClassifier()
+    TaskModel.LoadData('CV', Training_source='TrainingHO.csv', CrossValidation_source='CVH.csv')
+    TaskModel._Update_Variables(C=each_C, Sigma=each_Sigma, T=0.001, Step=0.01, KernalType='g', alpha_ini=True,
                             alpha_val=0.1,
                             Kernal_ini=True)
-    model.Train_Model(Loop=3, Model_File='StockTrainingModel2.csv')
-    model.Load_Model('StockTrainingModel2.csv')
-    model.Cross_Validate_Model(KernalType='g', Output='StockTest2.csv')
-    Precesion, Recall, Accuracy = model.Performance_Diag(Model='C')
-    model.ModelLearningCurve.append([model.Eidx_Training, model.Eidx_CV])
-    fn.writelines(
-        'C: %s,  Sigma: %s, Precesion: %s, Recall: %s, Accuracy: %s, Eidx_Training: %s, Eidx_CV: %s \n' % (
-            each_C, each_Sigma, Precesion, Recall, Accuracy, model.Eidx_Training, model.Eidx_CV))
-    fn.close()
+    TaskModel.Train_Model(Loop=3, Model_File='StockTrainingModel2.csv')
+    TaskModel.Load_Model('StockTrainingModel2.csv')
+    TaskModel.Cross_Validate_Model(KernalType='g', Output='StockTest2.csv')
+    Precesion, Recall, Accuracy, TP, FP, TN, FN = TaskModel.Performance_Diag(Model='C')
+
+    # model.ModelLearningCurve.append([TaskModel.Eidx_Training, TaskModel.Eidx_CV])
+    # print model.ModelLearningCurve
+    line = [
+        'C: %s,  Sigma: %s, TP:%s, FP:%s, TN:%s, FN:%s, Precesion: %s, Recall: %s, Accuracy: %s, Eidx_Training: %s, Eidx_CV: %s \n' % (
+            each_C, each_Sigma, TP, FP, TN, FN, Precesion, Recall, Accuracy, TaskModel.Eidx_Training,
+            TaskModel.Eidx_CV)]
+    # fn.writelines(
+    #    'C: %s,  Sigma: %s, TP:%s, FP:%s, TN:%s, FN:%s, Precesion: %s, Recall: %s, Accuracy: %s, Eidx_Training: %s, Eidx_CV: %s \n' % (
+    #        each_C, each_Sigma, TP, FP, TN, FN, Precesion, Recall, Accuracy, model.Eidx_Training, model.Eidx_CV))
+    outlist = [TaskModel.Eidx_Training, TaskModel.Eidx_CV, line]
+    output_que.put(outlist)
 
 def batch_test_parameters():
     model = SVMClassifier()
@@ -1089,11 +1093,11 @@ def batch_test_parameters():
         model.Train_Model(Loop=3, Model_File='StockMultiParameterModel1.csv')
         model.Load_Model('StockMultiParameterModel1.csv')
         model.Cross_Validate_Model(KernalType='g', Output='StockMultiParameterTest1.csv')
-        Precesion, Recall, Accuracy = model.Performance_Diag(Model='C')
+        Precesion, Recall, Accuracy, TP, FP, TN, FN = model.Performance_Diag(Model='C')
         model.ModelLearningCurve.append([round(model.Eidx_Training, 4), round(model.Eidx_CV, 4)])
         fn.writelines(
-            'C: %s,  Sigma: %s, Precesion: %s, Recall: %s, Accuracy: %s, Eidx_Training: %s, Eidx_CV: %s \n' % (
-                4.0, 0.8, Precesion, Recall, Accuracy, model.Eidx_Training, model.Eidx_CV))
+            'C: %s,  Sigma: %s, TP:%s, FP:%s, TN:%s, FN:%s, Precesion: %s, Recall: %s, Accuracy: %s, Eidx_Training: %s, Eidx_CV: %s \n' % (
+                4.0, 0.8, TP, FP, TN, FN, Precesion, Recall, Accuracy, model.Eidx_Training, model.Eidx_CV))
     fn.close()
     model.Plot_Learning_Curve()
 
@@ -1113,12 +1117,13 @@ def batch_test_sample_sizes():
         model.Train_Model(Loop=3, Model_File='StockSampleSizesModel1.csv')
         model.Load_Model('StockSampleSizesModel1.csv')
         model.Cross_Validate_Model(KernalType='g', Output='StockSampleSizesTest1.csv')
-        Precesion, Recall, Accuracy = model.Performance_Diag(Model='C')
+        Precesion, Recall, Accuracy, TP, FP, TN, FN = model.Performance_Diag(Model='C')
         # model.ModelLearningCurve.append([round(model.Eidx_Training,4), round(model.Eidx_CV,4)])
         model.ModelLearningCurve.append([round(model.Lidx_Training, 4), round(model.Lidx_CV, 4)])
         fn.writelines(
-            'C: %s,  Sigma: %s, Precesion: %s, Recall: %s, Accuracy: %s, Eidx_Training: %s, Eidx_CV: %s, Lidx_Training: %s, Lidx_CV: %s\n' % (
-                4.0, 0.8, Precesion, Recall, Accuracy, model.Eidx_Training, model.Eidx_CV, model.Lidx_Training,
+            'C: %s,  Sigma: %s, TP:%s, FP:%s, TN:%s, FN:%s, Precesion: %s, Recall: %s, Accuracy: %s, Eidx_Training: %s, Eidx_CV: %s, Lidx_Training: %s, Lidx_CV: %s\n' % (
+                4.0, 0.8, TP, FP, TN, FN, Precesion, Recall, Accuracy, model.Eidx_Training, model.Eidx_CV,
+                model.Lidx_Training,
                 model.Lidx_CV))
     fn.close()
     model.Plot_Learning_Curve()
