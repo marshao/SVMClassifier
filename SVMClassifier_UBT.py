@@ -984,7 +984,7 @@ def main():
 
 def singal_run():
     model = SVMClassifier()
-    model.LoadData('CV', Training_source='TrainingLO.csv', CrossValidation_source='CVLO.csv')
+    model.LoadData('CV', Training_source='TrainingLO.csv', CrossValidation_source='CVL.csv')
     model._Update_Variables(C=1.0, Sigma=0.1, T=0.001, Step=0.01, KernalType='g', alpha_ini=True, alpha_val=0.1,
                             Kernal_ini=True, Max_iter=3000)
     model.Train_Model(Loop=3, Model_File='StockTrainingModel2.csv')
@@ -999,7 +999,7 @@ def singal_run():
 
 def batch_test_C_Sigma():
     model = SVMClassifier()
-    model.LoadData('CV', Training_source='TrainingLO.csv', CrossValidation_source='CVLO.csv')
+    model.LoadData('CV', Training_source='TrainingLO.csv', CrossValidation_source='CVL.csv')
     #C = [0.6, 0.7, 0.8, 1.0, 1.3, 1.5, 1.8, 2.0, 3.0, 4.0]
     Sigma = [0.06, 0.08, 0.1, 0.3, 0.5, 0.8, 1.0, 1.5, 2.0]
     C = [1.0]
@@ -1025,7 +1025,7 @@ def batch_test_C_Sigma():
 
 def multi_batch_test_C_Sigma():
     model = SVMClassifier()
-    model.LoadData('CV', Training_source='TrainingLO.csv', CrossValidation_source='CVLO.csv')
+    model.LoadData('CV', Training_source='TrainingLO.csv', CrossValidation_source='CVL.csv')
     # C = [0.6, 0.7, 0.8, 1.0, 1.3, 1.5, 1.8, 2.0, 3.0, 4.0]
     Sigma = [0.06, 0.08, 0.1, 0.3, 0.5, 0.8, 1.0, 1.5, 2.0]
     C = [1.0]
@@ -1078,7 +1078,7 @@ def batch_test_parameters():
     # CVSource = ['StockCVParameter1.csv', 'StockCVParameter2.csv', 'StockCVParameter3.csv', 'StockCVParameter4.csv',
     #            'StockCVParameter5.csv', 'StockCVParameter6.csv']
     TrainingSource = ['TrainingHO.csv', 'TrainingLO.csv']
-    CVSource = ['CVHO.csv', 'CVLO.csv']
+    CVSource = ['CVH.csv', 'CVL.csv']
     fn = open('StockMultiParameterResults.csv', "w+")
 
     for i in range(len(TrainingSource)):

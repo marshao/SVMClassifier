@@ -17,7 +17,7 @@ class SVMClassifier:
         self.TrainingLabels = []  # Matrix of Training Labels
         self.CVSamples = []  # Matrix of CV samples
         self.CVLabels = []
-        self.TestingSampels = []  # Matrix of test samples
+        self.TestingSamples = []  # Matrix of test samples
         self.TestingLabels = []  # Marix of testing labels
         self.predicts = []  # Matrix of predicts
         self.T = 0.001  # Tolerance(Accuracy) of System
@@ -58,7 +58,7 @@ class SVMClassifier:
         self.TrainingLabels = []  # Matrix of Training Labels
         self.CVSamples = []  # Matrix of CV samples
         self.CVLabels = []
-        self.TestingSampels = []  # Matrix of test samples
+        self.TestingSamples = []  # Matrix of test samples
         self.TestingLabels = []  # Marix of testing labels
         self.predicts = []
         self.Eidx_Training_list = []
@@ -95,7 +95,7 @@ class SVMClassifier:
                 # Get xVariables from Testing Set
                 for item in vlist[:-1]:
                     xVariable.append(float(item))
-                self.TestingSampels.append(xVariable)
+                self.TestingSamples.append(xVariable)
 
                 # Get Lables from Testing Set
                 if float(vlist[-1]) == 0:
@@ -103,7 +103,7 @@ class SVMClassifier:
                 else:
                     label = float(vlist[-1])
                 self.TestingLabels.append(label)
-            print "Loaded %s Testing Samples" % len(self.TestingSampels)
+            print "Loaded %s Testing Samples" % len(self.TestingSamples)
             fn.close()
         elif model == 'CV':
             fn = open(CrossValidation_source, 'r')
@@ -124,7 +124,7 @@ class SVMClassifier:
                 else:
                     label = float(vlist[-1])
                 self.CVLabels.append(label)
-            print "Loaded %s CV Samples" % len(self.TestingSampels)
+            print "Loaded %s CV Samples" % len(self.CVSamples)
             fn.close()
         else:
             pass
@@ -585,7 +585,7 @@ class SVMClassifier:
             samples = self.CVSamples
             labels = self.CVLabels
         elif source == 'Test':
-            samples = self.TestingSampels
+            samples = self.TestingSamples
             labels = self.TestingLabels
         else:
             print 'No such model'
@@ -820,7 +820,7 @@ class SVMClassifier:
         stars = 0
         print "Model Prediction is started:"
         print "--------------------------------------------------------"
-        for x in self.TestingSampels:
+        for x in self.TestingSamples:
             stars += 1
             if stars < 78:
                 print "*",
@@ -982,13 +982,14 @@ def main():
     # singal_run()
     # batch_test_parameters()
     # batch_test_sample_sizes()
+    #multi_batch_test_C_Sigma()
     batch_test_C_Sigma()
 
 
 def singal_run():
     model = SVMClassifier()
-    model.LoadData('CV', Training_source='TrainingLO.csv', CrossValidation_source='CVLO.csv')
-    model._Update_Variables(C=1.0, Sigma=0.1, T=0.001, Step=0.01, KernalType='g', alpha_ini=True, alpha_val=0.1,
+    model.LoadData('CV', Training_source='TrainingHO.csv', CrossValidation_source='CVH.csv')
+    model._Update_Variables(C=3.0, Sigma=0.1, T=0.001, Step=0.01, KernalType='g', alpha_ini=True, alpha_val=0.1,
                             Kernal_ini=True, Max_iter=3000)
     model.Train_Model(Loop=3, Model_File='StockTrainingModel2.csv')
     model.Load_Model('StockTrainingModel2.csv')
@@ -1002,11 +1003,11 @@ def singal_run():
 
 def batch_test_C_Sigma():
     model = SVMClassifier()
-    model.LoadData('CV', Training_source='TrainingLO.csv', CrossValidation_source='CVLO.csv')
-    # C = [0.6, 0.7, 0.8, 1.0, 1.3, 1.5, 1.8, 2.0, 3.0, 4.0]
-    Sigma = [0.06, 0.08, 0.1, 0.3, 0.5, 0.8, 1.0, 1.5, 2.0]
-    C = [1.0]
-    # Sigma = [0.1]
+    model.LoadData('CV', Training_source='TrainingHO.csv', CrossValidation_source='CVH.csv')
+    C = [0.6, 0.7, 0.8, 1.0, 1.3, 1.5, 1.8, 2.0, 3.0, 4.0]
+    # Sigma = [0.06, 0.08, 0.1, 0.3, 0.5, 0.8, 1.0, 1.5, 2.0]
+    # C = [1.0]
+    Sigma = [0.04]
     fn = open('StockMultiModelResults.csv', "w+")
     for each_C in C:
         for each_Sigma in Sigma:
@@ -1028,11 +1029,11 @@ def batch_test_C_Sigma():
 
 def multi_batch_test_C_Sigma():
     model = SVMClassifier()
-    model.LoadData('CV', Training_source='TrainingLO.csv', CrossValidation_source='CVLO.csv')
-    # C = [0.6, 0.7, 0.8, 1.0, 1.3, 1.5, 1.8, 2.0, 3.0, 4.0]
-    Sigma = [0.06, 0.08, 0.1, 0.3, 0.5, 0.8, 1.0, 1.5, 2.0]
-    C = [1.0]
-    # Sigma = [0.1]
+    model.LoadData('CV', Training_source='TrainingHO.csv', CrossValidation_source='CVH.csv')
+    C = [0.6, 0.7, 0.8, 1.0, 1.3, 1.5, 1.8, 2.0, 3.0, 4.0]
+    # Sigma = [0.06, 0.08, 0.1, 0.3, 0.5, 0.8, 1.0, 1.5, 2.0]
+    # C = [1.0]
+    Sigma = [0.1]
     processors = 7
     processes = []
     index_beg = 0
@@ -1082,7 +1083,7 @@ def batch_test_parameters():
     # CVSource = ['StockCVParameter1.csv', 'StockCVParameter2.csv', 'StockCVParameter3.csv', 'StockCVParameter4.csv',
     #            'StockCVParameter5.csv', 'StockCVParameter6.csv']
     TrainingSource = ['TrainingHO.csv', 'TrainingLO.csv']
-    CVSource = ['CVHO.csv', 'CVLO.csv']
+    CVSource = ['CVH.csv', 'CVL.csv']
     fn = open('StockMultiParameterResults.csv', "w+")
 
     for i in range(len(TrainingSource)):
