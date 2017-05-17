@@ -51,13 +51,24 @@ class C_GettingData:
                                                 'turnover_rate', 'PE','circulation_market_value','total_market_value','PB','limit_up','limit_down']
         self._x_min_columns = ['quote_time', 'open_price', 'high_price','low_price','close_price','trading_volumn','stock_code','period']
         self._1_min_columns = ['quote_time', 'price', 'trading_volumn','stock_code']
-        self._base_finance_value=[['2017-03-31',0.0369,3.19,147709300,0.1621], ['2016-12-31',0.1402,3.13,147794500,0.1594],
+        # sz300226
+        self._base_finance_value = [['2017-03-31', 0.0369, 3.19, 147709300, 0.1621],
+                                    ['2016-12-31', 0.1402, 3.13, 147794500, 0.1594],
                                   ['2016-09-30', 0.1019, 3.07, 147794500, -0.5266],
                                   ['2016-06-30', 0.0871, 2.47, 147794500, -1.2731],
                                   ['2016-03-31', 0.0258, 2.32, 10862390, -2.2687],
                                   ['2015-12-31', -1.61, 0.5, 102955400, -2.4462],
                                   ['2015-09-30', -1.1795, 0.92, 102955400, -1.6715],
                                   ['2015-06-30', -0.6977, 1.4, 102955400, -0.8785]]  # 日期，稀释每股收益，每股净资产，流通A股， EPS(TTM)
+        # sh600867
+        self._base_finance_value = [['2017-03-31', 0.15, 2.91, 1363302500, 0.3567],
+                                    ['2016-12-31', 0.46, 2.77, 1363302500, 0.4714],
+                                    ['2016-09-30', 0.36, 2.64, 1360093300, 0.4601],
+                                    ['2016-06-30', 0.23, 1.86, 1357915300, 0.4358],
+                                    ['2016-03-31', 0.14, 2.31, 1357915300, 0.4473],
+                                    ['2015-12-31', 0.43, 2.17, 1131596100, 0.1743],
+                                    ['2015-09-30', 0.34, 2, 05, 1131596100, 0.1415],
+                                    ['2015-06-30', 0.23, 1.92, 1127060600, 0.0982]]  # 日期，稀释每股收益，每股净资产，流通A股， EPS(TTM)
         self._base_finance_value_columns=['quote_time','diluted_eps','BVPS','A_total','EPS_TTM']
         self._stock_minitue_data_DF = pandas.DataFrame(columns = self._my_real_time_DF_columns_sina)
         self._x_min_data_DF = pandas.DataFrame(columns = self._x_min_columns)
@@ -495,7 +506,7 @@ class C_GettingData:
 
     def load_data_from_file_into_df(self, df_stock_records=None, source_file=None):
         '''
-        Load data from file, (Capital data)
+        Load data from file, (Capital 资金 data)
         :param df_stock_records:
         :return:
         '''
@@ -614,13 +625,13 @@ def main():
     #pp.get_data_qq(stock_code='sh600221',period='week')
 
     #-------------------------------------------------------
-    pp.get_data_qq(stock_code='sz300226', period='day')
-    df = pp.load_data_from_db()
-    df = pp.load_data_from_file_into_df(df, source_file='Capital2.csv')
+    pp.get_data_qq(stock_code='sh600867', period='day')
+    df = pp.load_data_from_db(stock_code='sh600867', period='day')
+    df = pp.load_data_from_file_into_df(df, source_file='600867Capital.csv')
     df = pp._cal_PBPE(df)
     df = pp._add_higher_degree_parameters(df)
     df = pp.data_normalization(df)
-    df.to_csv('stock_data2.csv', header=True)
+    df.to_csv('stock_data_600887_HO.csv', header=True)
 
 if __name__ == '__main__':
     main()
