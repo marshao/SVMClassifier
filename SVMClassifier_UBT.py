@@ -1032,7 +1032,7 @@ def multi_batch_test_C_Sigma():
     #Sigma = [0.06, 0.08]
     # C = [1.0]
     #Sigma = [0.1]
-    processors = 7
+    processors = 12
     processes = []
     output_que = mp.Queue()
     fn = open('600867_StockMultiC-Sigma-Results-LO.csv', "w+")
