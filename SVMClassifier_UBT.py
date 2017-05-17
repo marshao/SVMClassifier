@@ -1035,7 +1035,7 @@ def multi_batch_test_C_Sigma():
     processors = 7
     processes = []
     output_que = mp.Queue()
-    fn = open('StockMultiC-Sigma-Results-HO_2.csv', "w+")
+    fn = open('600867_StockMultiC-Sigma-Results-LO.csv', "w+")
     # fn = open('StockMultiModelResults.csv', "w+")
     for each_C in C:
         for each_Sigma in Sigma:
@@ -1055,7 +1055,7 @@ def multi_batch_test_C_Sigma():
 
 def task(model, each_C, each_Sigma, fn, output_que):
     TaskModel = SVMClassifier()
-    TaskModel.LoadData('CV', Training_source='TrainingHO.csv', CrossValidation_source='CVH.csv')
+    TaskModel.LoadData('CV', Training_source='600867_Train_LO.csv', CrossValidation_source='600867_CV_LO.csv')
     TaskModel._Update_Variables(C=each_C, Sigma=each_Sigma, T=0.001, Step=0.01, KernalType='g', alpha_ini=True,
                             alpha_val=0.1,
                             Kernal_ini=True)
