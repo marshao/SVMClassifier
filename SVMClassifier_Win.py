@@ -979,21 +979,21 @@ def main():
     # profile.run("run()", "prof1.txt")
     # p = pstats.Stats('prof1.txt')
     # p.sort_stats('time').print_stats()
-    # singal_run()
+    singal_run()
     # batch_test_parameters()
     # batch_test_sample_sizes()
     #multi_batch_test_C_Sigma()
-    batch_test_C_Sigma()
+    # batch_test_C_Sigma()
 
 
 def singal_run():
     model = SVMClassifier()
-    model.LoadData('CV', Training_source='TrainingHO.csv', CrossValidation_source='CVH.csv')
-    model._Update_Variables(C=3.0, Sigma=0.1, T=0.001, Step=0.01, KernalType='g', alpha_ini=True, alpha_val=0.1,
+    model.LoadData('CV', Training_source='input\\600867_Train_LO.csv', CrossValidation_source='input\\600867_CV_LO.csv')
+    model._Update_Variables(C=2.0, Sigma=0.08, T=0.001, Step=0.01, KernalType='g', alpha_ini=True, alpha_val=0.1,
                             Kernal_ini=True, Max_iter=3000)
-    model.Train_Model(Loop=3, Model_File='StockTrainingModel2.csv')
-    model.Load_Model('StockTrainingModel2.csv')
-    model.Cross_Validate_Model(KernalType='g', Output='StockTest2.csv')
+    model.Train_Model(Loop=3, Model_File='model\\600867_TrainingModel2.csv')
+    model.Load_Model('model\\600867_TrainingModel2.csv')
+    model.Cross_Validate_Model(KernalType='g', Output='output\\600867_TestResult.csv')
     # model.Test_Model(KernalType='g', Output='StockTest2.csv')
     Precesion, Recall, Accuracy = model.Performance_Diag(Model='C')
     print(

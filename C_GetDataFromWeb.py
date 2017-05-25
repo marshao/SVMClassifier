@@ -26,7 +26,8 @@ class C_GettingData:
         self._data_source={'sina':'http://hq.sinajs.cn/list=','qq_realtime':'http://qt.gtimg.cn/q=%s',
                            'qq_1_min':'http://web.ifzq.gtimg.cn/appstock/app/minute/query?_var=min_data_%s&code=%s',
                            'qq_x_min':'http://ifzq.gtimg.cn/appstock/app/kline/mkline?param=%s,%s,,%s',
-                           'qq_x_period': 'http://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=%s,%s,,,%s,%s'}
+                           'qq_x_period': 'http://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=%s,%s,,,%s,%s',
+                           'qq_realtime_capital': 'http://stock.gtimg.cn/data/view/ggdx.php?t=2&q=%s'}
         self._x_min = ['m1','m5','m15','m30','m60']
         self._x_period = ['day', 'week']
         self._q_count = ['320','50','16','8','4']
@@ -51,25 +52,6 @@ class C_GettingData:
                                                 'turnover_rate', 'PE','circulation_market_value','total_market_value','PB','limit_up','limit_down']
         self._x_min_columns = ['quote_time', 'open_price', 'high_price','low_price','close_price','trading_volumn','stock_code','period']
         self._1_min_columns = ['quote_time', 'price', 'trading_volumn','stock_code']
-        # sz300226
-        self._base_finance_value = [['2017-03-31', 0.0369, 3.19, 147709300, 0.1621],
-                                    ['2016-12-31', 0.1402, 3.13, 147794500, 0.1594],
-                                  ['2016-09-30', 0.1019, 3.07, 147794500, -0.5266],
-                                  ['2016-06-30', 0.0871, 2.47, 147794500, -1.2731],
-                                  ['2016-03-31', 0.0258, 2.32, 10862390, -2.2687],
-                                  ['2015-12-31', -1.61, 0.5, 102955400, -2.4462],
-                                  ['2015-09-30', -1.1795, 0.92, 102955400, -1.6715],
-                                  ['2015-06-30', -0.6977, 1.4, 102955400, -0.8785]]  # 日期，稀释每股收益，每股净资产，流通A股， EPS(TTM)
-        # sh600867
-        self._base_finance_value = [['2017-03-31', 0.15, 2.91, 1363302500, 0.3567],
-                                    ['2016-12-31', 0.46, 2.77, 1363302500, 0.4714],
-                                    ['2016-09-30', 0.36, 2.64, 1360093300, 0.4601],
-                                    ['2016-06-30', 0.23, 1.86, 1357915300, 0.4358],
-                                    ['2016-03-31', 0.14, 2.31, 1357915300, 0.4473],
-                                    ['2015-12-31', 0.43, 2.17, 1131596100, 0.1743],
-                                    ['2015-09-30', 0.34, 2, 05, 1131596100, 0.1415],
-                                    ['2015-06-30', 0.23, 1.92, 1127060600, 0.0982]]  # 日期，稀释每股收益，每股净资产，流通A股， EPS(TTM)
-        self._base_finance_value_columns=['quote_time','diluted_eps','BVPS','A_total','EPS_TTM']
         self._stock_minitue_data_DF = pandas.DataFrame(columns = self._my_real_time_DF_columns_sina)
         self._x_min_data_DF = pandas.DataFrame(columns = self._x_min_columns)
         self._x_period_data_DF = pandas.DataFrame(columns=self._x_min_columns)
@@ -475,6 +457,74 @@ class C_GettingData:
         for p in processes:
             p.join()
 
+
+class C_GettingSVMData(C_GettingData):
+    def __init__(self):
+        C_GettingData.__init__(self)
+        # sz300226
+        self._base_finance_value = [['2017-03-31', 0.0369, 3.19, 147709300, 0.1621],
+                                    ['2016-12-31', 0.1402, 3.13, 147794500, 0.1594],
+                                    ['2016-09-30', 0.1019, 3.07, 147794500, -0.5266],
+                                    ['2016-06-30', 0.0871, 2.47, 147794500, -1.2731],
+                                    ['2016-03-31', 0.0258, 2.32, 10862390, -2.2687],
+                                    ['2015-12-31', -1.61, 0.5, 102955400, -2.4462],
+                                    ['2015-09-30', -1.1795, 0.92, 102955400, -1.6715],
+                                    ['2015-06-30', -0.6977, 1.4, 102955400, -0.8785]]  # 日期，稀释每股收益，每股净资产，流通A股， EPS(TTM)
+        # sh600867
+        self._base_finance_value = [['2017-03-31', 0.15, 2.91, 1363302500, 0.3567],
+                                    ['2016-12-31', 0.46, 2.77, 1363302500, 0.4714],
+                                    ['2016-09-30', 0.36, 2.64, 1360093300, 0.4601],
+                                    ['2016-06-30', 0.23, 1.86, 1357915300, 0.4358],
+                                    ['2016-03-31', 0.14, 2.31, 1357915300, 0.4473],
+                                    ['2015-12-31', 0.43, 2.17, 1131596100, 0.1743],
+                                    ['2015-09-30', 0.34, 2, 05, 1131596100, 0.1415],
+                                    ['2015-06-30', 0.23, 1.92, 1127060600, 0.0982]]  # 日期，稀释每股收益，每股净资产，流通A股， EPS(TTM)
+        self._base_finance_value_columns = ['quote_time', 'diluted_eps', 'BVPS', 'A_total', 'EPS_TTM']
+
+    def get_named_minitue_capital(self, stock_code=None, time=None):
+        '''
+        Look for capital data of a stock at given time
+        :param stock_code: stock code 'sh600867'
+        :param time: given time '14:55:00'
+        :return: a float value of 主力 capital
+        '''
+        if stock_code is None:
+            stock_code = 'sh600867'
+        if time is None:
+            time = '14:55:00'
+        url = self._data_source['qq_realtime_capital'] % (stock_code)
+        html = urllib.urlopen(url)
+        data = html.read()
+        # locate the position of given time
+        sPos = data.find(time)
+        # The wanted data is between the 5th and 4th ~ in reverse order start from the given time position
+        i = 0
+        while i < 5:
+            if i == 0:
+                sPos = data.rfind('~', 0, sPos)
+            else:
+                sPos = data.rfind('~', 0, (sPos - 2))
+
+            if i == 3: ePos = sPos
+            i += 1
+        return data[sPos + 1: ePos]
+
+    def get_named_minitue_price(self, stock_code=None, time=None):
+        '''
+        Look for price data of a stock at given time
+        :param stock_code: stock code 'sh600867'
+        :param time: given time '14:55:00'
+        :return: a float value of price
+        '''
+        if stock_code is None:
+            stock_code = 'sh600867'
+        if time is None:
+            time = '14:55:00'
+        # Update minite data into DB.
+        pp = C_GettingData()
+        pp.get_data_qq(stock_code=stock_code, period='m1')
+        return self.load_data_from_db(stock_code=stock_code, start=time, period='m1', row_count=1)
+
     def load_data_from_db(self, stock_code=None, start=None, end=None, period=None, row_count=None):
         '''
         Load Data from DB
@@ -491,22 +541,35 @@ class C_GettingData:
             period = 'day'
         if row_count is None:
             row_count = 300
-        sql_fetch_min_records = (
-            "select * from tb_StockXMinRecords where period = %s and stock_code = %s ORDER by quote_time DESC limit %s")
+        sql_fetch_batch_min_records = (
+            "select * from tb_Stock1MinRecords where period = %s and stock_code = %s ORDER by quote_time DESC limit %s")
+        sql_fetch_named_min_records = (
+            "select * from tb_Stock1MinRecords where stock_code = %s and quote_time = %s limit %s")
         sql_fetch_period_records = (
             "select * from tb_StockXPeriodRecords where period = %s and stock_code = %s ORDER by quote_time DESC limit %s")
         if period == 'day' or period == 'week':
             sql_fetch_records = sql_fetch_period_records
+            df_stock_records = pandas.read_sql(sql_fetch_records, con=self._engine, index_col='quote_time',
+                                               params=(period, stock_code, row_count))
+        elif row_count == 1:
+            time_stamp = datetime.datetime.now()
+            quote_date = time_stamp.date()
+            # Using start parameter to transfer minitue
+            quote_time = str(quote_date) + " " + start
+            sql_fetch_records = sql_fetch_named_min_records
+            df_stock_records = pandas.read_sql(sql_fetch_records, con=self._engine, index_col='quote_time',
+                                               params=(stock_code, quote_time, row_count))
         else:
-            sql_fetch_records = sql_fetch_min_records
+            sql_fetch_records = sql_fetch_batch_min_records
+            df_stock_records = pandas.read_sql(sql_fetch_records, con=self._engine, index_col='quote_time',
+                                               params=(period, stock_code, row_count))
 
-        df_stock_records = pandas.read_sql(sql_fetch_records, con=self._engine,index_col='quote_time',params=(period, stock_code, row_count))
         #df_stock_records = pandas.read_sql(sql_fetch_records, con=self._engine,params=(period, stock_code, row_count))
         return  df_stock_records
 
     def load_data_from_file_into_df(self, df_stock_records=None, source_file=None):
         '''
-        Load data from file, (Capital 资金 data)
+        Load data from file, (Captial 资金 data)
         :param df_stock_records:
         :return:
         '''
@@ -611,27 +674,32 @@ class C_GettingData:
 
 
 def main():
-    pp = C_GettingData()
+    #pp = C_GettingData()
     # pp.job_schedule()
     #pp.get_real_time_data('sina', 'sz300226')
-    #pp.get_real_time_data(None, None)
+    #pp.get_real_time_data('sh600867', 'real')
     #pp.save_real_time_data_to_db()
     #pp.service_getting_data()
     #pp.get_data_qq(stock_code='sz300226', period='m60')
-    # pp.get_data_qq(stock_code='sz300146',period='m1')
+    # print pp._time_tag_dateonly()
+    #pp.get_data_qq(stock_code='sh600867',period='m1')
     #pp.get_data_qq(period='real')
     # pp.get_data_qq(stock_code='sz300146', period='m30')
     # pp.get_data_qq(stock_code='sh600221', period='day')
     #pp.get_data_qq(stock_code='sh600221',period='week')
 
+
     #-------------------------------------------------------
-    pp.get_data_qq(stock_code='sh600867', period='day')
-    df = pp.load_data_from_db(stock_code='sh600867', period='day')
-    df = pp.load_data_from_file_into_df(df, source_file='600867Capital.csv')
-    df = pp._cal_PBPE(df)
-    df = pp._add_higher_degree_parameters(df)
-    df = pp.data_normalization(df)
-    df.to_csv('stock_data_600887_HO.csv', header=True)
+    ps = C_GettingSVMData()
+    print ps.get_named_minitue_price(stock_code='sh600867', time='11:20:00')
+    # ps.get_named_miniue_capital()
+    # pp.get_data_qq(stock_code='sh600867', period='day')
+    # df = pp.load_data_from_db(stock_code='sh600867', period='day')
+    # df = pp.load_data_from_file_into_df(df, source_file='600867Capital.csv')
+    # df = pp._cal_PBPE(df)
+    # df = pp._add_higher_degree_parameters(df)
+    # df = pp.data_normalization(df)
+    #df.to_csv('webdata\\stock_data_600887_LO.csv', header=True)
 
 if __name__ == '__main__':
     main()
