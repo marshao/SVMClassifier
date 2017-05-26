@@ -771,7 +771,8 @@ def get_named_minitue_svm_data(stock_code, pp, ps, time):
             df[column_name] = (df[column] - means[column]) / stds[column]
         else:
             continue
-    df.to_csv('webdata\\stock_data_%s.csv' % stock_code, header=True)
+    cols_to_write = ['nor_close_price', 'nor_trading_volumn', 'nor_Capital', 'nor_PE_TTM', 'nor_PB']
+    df[cols_to_write].to_csv('webdata\\stock_data_%s.csv' % stock_code, header=False, index=False)
 
 
 def get_batch_svm_data_mean_stds(stock_code, pp, ps):
