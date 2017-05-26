@@ -2,7 +2,7 @@
 # -*- coding: utf8 -*-
 
 
-import math, time
+import math, time, datetime
 import numpy as np
 import matplotlib.pyplot as plt
 import multiprocessing as mp
@@ -42,16 +42,16 @@ class SVMClassifier:
         self.Eidx_CV = 0.0
         self.Lidx_CV = 0
 
-    def LoadData(self, model, Training_source=None, Testing_source=None, CrossValidation_source=None):
+    def LoadData(self, model=None, Training_source=None, Testing_source=None, CrossValidation_source=None):
         '''Load Samples Data into Numpy Matrix
            Initial Parameters
         '''
-        if Training_source is None:
-            Training_source = 'TrainingSamples2.csv'
         if Testing_source is None:
             Testing_source = 'TestingSamples.csv'
         if CrossValidation_source is None:
             CrossValidation_source = 'CVSamples.csv'
+        if model is None:
+            model = 'Tr'
 
         # Reset all sample catches to 0
         self.TrainingSamples = []  # Matrix of Training Sample
@@ -855,9 +855,45 @@ class SVMClassifier:
         print 'Test Result has been writen to %s' % destination
         fn.close()
 
-    def Predict(self):
-        '''Function to use model to predict values'''
-        pass
+    def Predict(self, xValueDir, yOutputDir, KernalType=None):
+        '''
+        This function is to read a xValues in a CSV file and return a predicted y value
+        :param xValueDir: The directory of xValues file
+        :param KernalType:
+        :param Mode: Te
+        :return:
+        '''
+        if KernalType is None:
+            KernalType = self.KernalType
+
+        xVariable = []
+
+        fn = open(xValueDir, "r")
+        for line in fn:
+            tmp = []
+            line = line[:-1]  # Remove the /r/n
+            vlist1 = line.split("/r")
+            if vlist1[0] == "": continue  # Omit empty line
+            vlist = vlist1[0].split(",")
+            # Get xVariables from Training Set
+            for item in vlist:
+                tmp.append(float(item))
+            xVariable.append(tmp)
+        fn.close()
+
+        fn = open(yOutputDir, "a")
+        time_stamp = datetime.datetime.now()
+        date_stamp = time_stamp.date()
+        for item in xVariable:
+            pre = self._Cal_F(item, KernalType, Mode='Te')
+            if pre > 0:
+                val = 1
+            else:
+                val = -1
+            line = str(date_stamp) + ',' + str(val) + '\n'
+            fn.write(line)
+        fn.close()
+
 
     def Performance_Diag(self, From=None, Result=None, Model=None):
         '''Function to evaluate performance of models
@@ -979,12 +1015,23 @@ def main():
     # profile.run("run()", "prof1.txt")
     # p = pstats.Stats('prof1.txt')
     # p.sort_stats('time').print_stats()
-    singal_run()
+    # singal_run()
+    predict()
     # batch_test_parameters()
     # batch_test_sample_sizes()
     #multi_batch_test_C_Sigma()
     # batch_test_C_Sigma()
 
+
+def predict():
+    model = SVMClassifier()
+    model.LoadData(Training_source='input\\600867_Train_LO.csv')
+    model._Update_Variables(C=2.0, Sigma=0.08, T=0.001, Step=0.01, KernalType='g', alpha_ini=True, alpha_val=0.1,
+                            Kernal_ini=True, Max_iter=3000)
+    model.Load_Model('model\\600867_TrainingModel2.csv')
+    xValueDir = 'webdata\\stock_data_sh600867.csv'
+    yOutputDir = 'output\\stock_pre_sh600867.csv'
+    model.Predict(xValueDir=xValueDir, yOutputDir=yOutputDir, KernalType='g')
 
 def singal_run():
     model = SVMClassifier()

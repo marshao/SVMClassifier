@@ -665,6 +665,7 @@ class C_GettingSVMData(C_GettingData):
                 continue
         return df_records, means, stds
 
+
     def _cal_PBPE(self, df_daily_record=None):
         '''
         Calculation of PB and PE_TTM
@@ -738,7 +739,7 @@ def main():
     #pp.get_data_qq(stock_code='sh600221',period='week')
 
     stock_code = 'sh600867'
-    time = '09:32:00'
+    time = '14:55:00'
     ps = C_GettingSVMData()
     # -------------------------------------------------------
     get_named_minitue_svm_data(stock_code, pp, ps, time)
