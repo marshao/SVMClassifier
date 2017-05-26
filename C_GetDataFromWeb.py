@@ -481,17 +481,21 @@ class C_GettingSVMData(C_GettingData):
                                     ['2015-06-30', 0.23, 1.92, 1127060600, 0.0982]]  # 日期，稀释每股收益，每股净资产，流通A股， EPS(TTM)
         self._base_finance_value_columns = ['quote_time', 'diluted_eps', 'BVPS', 'A_total', 'EPS_TTM']
 
-    def get_named_minitue_capital(self, stock_code=None, time=None):
+    def get_named_minitue_capital(self, stock_code=None, time=None, df=None):
         '''
         Look for capital data of a stock at given time
         :param stock_code: stock code 'sh600867'
         :param time: given time '14:55:00'
+        :param df: The DF of the named minute data
         :return: a float value of 主力 capital
         '''
         if stock_code is None:
             stock_code = 'sh600867'
         if time is None:
             time = '14:55:00'
+        if df is None:
+            print 'The parameter DF is missing.'
+            return
         url = self._data_source['qq_realtime_capital'] % (stock_code)
         html = urllib.urlopen(url)
         data = html.read()
@@ -507,7 +511,37 @@ class C_GettingSVMData(C_GettingData):
 
             if i == 3: ePos = sPos
             i += 1
-        return data[sPos + 1: ePos]
+        capital = data[sPos + 1: ePos]
+        df.set_value(time, 'Capital', float(capital))
+        return df
+
+    def get_daily_capital(self, stock_code=None, days=None):
+        '''
+        Look for capital data of a stock at given time
+        :param stock_code: stock code 'sh600867'
+        :param time: given time '14:55:00'
+        :param df: The DF of the named minute data
+        :return: a float value of 主力 capital
+        '''
+        if stock_code is None:
+            stock_code = 'sh600867'
+        if days is None:
+            days = '300'
+        else:
+            days = str(days)
+        daily_capital = []
+        url = 'http://stock.gtimg.cn/data/view/ggdx.php?t=3&q=%s&d=%s' % (stock_code, days)
+        html = urllib.urlopen(url)
+        data = html.read()
+        # locate the position of =
+        sPos = data.find('=')
+        data = data[sPos + 2:-2].split('^')
+        for each_day in data:
+            daily = each_day.split('~')
+            tmp = [daily[3], daily[1]]
+            daily_capital.append(tmp)
+        return daily_capital
+
 
     def get_named_minitue_price(self, stock_code=None, time=None):
         '''
@@ -523,7 +557,9 @@ class C_GettingSVMData(C_GettingData):
         # Update minite data into DB.
         pp = C_GettingData()
         pp.get_data_qq(stock_code=stock_code, period='m1')
-        return self.load_data_from_db(stock_code=stock_code, start=time, period='m1', row_count=1)
+        df = self.load_data_from_db(stock_code=stock_code, start=time, period='m1', row_count=1)
+        df.rename(columns={'price': 'close_price'}, inplace=True)
+        return df
 
     def load_data_from_db(self, stock_code=None, start=None, end=None, period=None, row_count=None):
         '''
@@ -567,7 +603,7 @@ class C_GettingSVMData(C_GettingData):
         #df_stock_records = pandas.read_sql(sql_fetch_records, con=self._engine,params=(period, stock_code, row_count))
         return  df_stock_records
 
-    def load_data_from_file_into_df(self, df_stock_records=None, source_file=None):
+    def load_capital_from_file_into_df(self, df_stock_records=None, source_file=None):
         '''
         Load data from file, (Captial 资金 data)
         :param df_stock_records:
@@ -593,7 +629,21 @@ class C_GettingSVMData(C_GettingData):
         fn.close()
         return df_stock_records
 
-
+    def load_captical_from_list_into_df(self, df_stock_records=None, capital_list=None):
+        '''
+        Load Daily Capital data into DF
+        :param df_stock_records:
+        :param capital_list: List with Capital data
+        :return:
+        '''
+        for item in capital_list:
+            quote_time = datetime.datetime.strptime(item[0], '%Y-%m-%d')
+            if quote_time in df_stock_records.index:
+                df_stock_records.set_value(quote_time, 'Capital', float(item[1]))
+            else:
+                continue
+        df_stock_records.dropna(inplace=True)
+        return df_stock_records
 
     def data_normalization(self, df_records=None):
         '''
@@ -613,7 +663,7 @@ class C_GettingSVMData(C_GettingData):
                 df_records[column_name] = (df_records[column]-means[column])/stds[column]
             else:
                 continue
-        return df_records
+        return df_records, means, stds
 
     def _cal_PBPE(self, df_daily_record=None):
         '''
@@ -664,7 +714,6 @@ class C_GettingSVMData(C_GettingData):
         :return:
         '''
         for column in df:
-            print column
             if column != 'id_tb_StockXPeriodRecords' and isinstance(df[column][0], str) is False:
                 # pow(column, 2)
                 new_column = column + '-Order%s' % degree
@@ -674,7 +723,7 @@ class C_GettingSVMData(C_GettingData):
 
 
 def main():
-    #pp = C_GettingData()
+    pp = C_GettingData()
     # pp.job_schedule()
     #pp.get_real_time_data('sina', 'sz300226')
     #pp.get_real_time_data('sh600867', 'real')
@@ -688,18 +737,53 @@ def main():
     # pp.get_data_qq(stock_code='sh600221', period='day')
     #pp.get_data_qq(stock_code='sh600221',period='week')
 
-
-    #-------------------------------------------------------
+    stock_code = 'sh600867'
+    time = '09:32:00'
     ps = C_GettingSVMData()
-    print ps.get_named_minitue_price(stock_code='sh600867', time='11:20:00')
-    # ps.get_named_miniue_capital()
-    # pp.get_data_qq(stock_code='sh600867', period='day')
-    # df = pp.load_data_from_db(stock_code='sh600867', period='day')
-    # df = pp.load_data_from_file_into_df(df, source_file='600867Capital.csv')
-    # df = pp._cal_PBPE(df)
-    # df = pp._add_higher_degree_parameters(df)
-    # df = pp.data_normalization(df)
-    #df.to_csv('webdata\\stock_data_600887_LO.csv', header=True)
+    # -------------------------------------------------------
+    get_named_minitue_svm_data(stock_code, pp, ps, time)
+    # -----------------------------------------------------------
+    get_batch_svm_data(stock_code, pp, ps)
+
+
+def get_batch_svm_data(stock_code, pp, ps):
+    pp.get_data_qq(stock_code=stock_code, period='day')
+    df = ps.load_data_from_db(stock_code=stock_code, period='day')
+    ls = ps.get_daily_capital(stock_code=stock_code, days=300)
+    # df = ps.load_capital_from_file_into_df(df, source_file='input\\600867Capital.csv')
+    df = ps.load_captical_from_list_into_df(df, ls)
+    df = ps._cal_PBPE(df)
+    # df = ps._add_higher_degree_parameters(df)
+    df, means, stds = ps.data_normalization(df)
+    df.to_csv('webdata\\stock_data_600867_LO.csv', header=True)
+
+
+def get_named_minitue_svm_data(stock_code, pp, ps, time):
+    df = ps.get_named_minitue_price(stock_code=stock_code, time=time)
+    df = ps.get_named_minitue_capital(stock_code=stock_code, time=time, df=df)
+    df = ps._cal_PBPE(df)
+    # df = ps._add_higher_degree_parameters(df)
+    # Data normalization using batch means and stds
+    means, stds = get_batch_svm_data_mean_stds(stock_code, pp, ps)
+    for column in df:
+        if isinstance(df[column][0], float):
+            column_name = 'nor_' + column
+            df[column_name] = (df[column] - means[column]) / stds[column]
+        else:
+            continue
+    df.to_csv('webdata\\stock_data_%s.csv' % stock_code, header=True)
+
+
+def get_batch_svm_data_mean_stds(stock_code, pp, ps):
+    pp.get_data_qq(stock_code=stock_code, period='day')
+    df = ps.load_data_from_db(stock_code=stock_code, period='day')
+    ls = ps.get_daily_capital(stock_code=stock_code, days=300)
+    # df = ps.load_capital_from_file_into_df(df, source_file='input\\600867Capital.csv')
+    df = ps.load_captical_from_list_into_df(df, ls)
+    df = ps._cal_PBPE(df)
+    df = ps._add_higher_degree_parameters(df)
+    df, means, stds = ps.data_normalization(df)
+    return means, stds
 
 if __name__ == '__main__':
     main()
