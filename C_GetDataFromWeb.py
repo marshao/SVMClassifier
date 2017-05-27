@@ -462,23 +462,35 @@ class C_GettingSVMData(C_GettingData):
     def __init__(self):
         C_GettingData.__init__(self)
         # sz300226
-        self._base_finance_value = [['2017-03-31', 0.0369, 3.19, 147709300, 0.1621],
-                                    ['2016-12-31', 0.1402, 3.13, 147794500, 0.1594],
-                                    ['2016-09-30', 0.1019, 3.07, 147794500, -0.5266],
-                                    ['2016-06-30', 0.0871, 2.47, 147794500, -1.2731],
-                                    ['2016-03-31', 0.0258, 2.32, 10862390, -2.2687],
-                                    ['2015-12-31', -1.61, 0.5, 102955400, -2.4462],
-                                    ['2015-09-30', -1.1795, 0.92, 102955400, -1.6715],
-                                    ['2015-06-30', -0.6977, 1.4, 102955400, -0.8785]]  # 日期，稀释每股收益，每股净资产，流通A股， EPS(TTM)
+        self._base_finance_value_sz300226 = [['2017-03-31', 0.0369, 3.19, 147709300, 0.1621],
+                                             ['2016-12-31', 0.1402, 3.13, 147794500, 0.1594],
+                                             ['2016-09-30', 0.1019, 3.07, 147794500, -0.5266],
+                                             ['2016-06-30', 0.0871, 2.47, 147794500, -1.2731],
+                                             ['2016-03-31', 0.0258, 2.32, 10862390, -2.2687],
+                                             ['2015-12-31', -1.61, 0.5, 102955400, -2.4462],
+                                             ['2015-09-30', -1.1795, 0.92, 102955400, -1.6715],
+                                             ['2015-06-30', -0.6977, 1.4, 102955400,
+                                              -0.8785]]  # 日期，稀释每股收益，每股净资产，流通A股， EPS(TTM)
         # sh600867
-        self._base_finance_value = [['2017-03-31', 0.15, 2.91, 1363302500, 0.3567],
-                                    ['2016-12-31', 0.46, 2.77, 1363302500, 0.4714],
-                                    ['2016-09-30', 0.36, 2.64, 1360093300, 0.4601],
-                                    ['2016-06-30', 0.23, 1.86, 1357915300, 0.4358],
-                                    ['2016-03-31', 0.14, 2.31, 1357915300, 0.4473],
-                                    ['2015-12-31', 0.43, 2.17, 1131596100, 0.1743],
-                                    ['2015-09-30', 0.34, 2, 05, 1131596100, 0.1415],
-                                    ['2015-06-30', 0.23, 1.92, 1127060600, 0.0982]]  # 日期，稀释每股收益，每股净资产，流通A股， EPS(TTM)
+        self._base_finance_value_sh600867 = [['2017-03-31', 0.15, 2.91, 1363302500, 0.3567],
+                                             ['2016-12-31', 0.46, 2.77, 1363302500, 0.4714],
+                                             ['2016-09-30', 0.36, 2.64, 1360093300, 0.4601],
+                                             ['2016-06-30', 0.23, 1.86, 1357915300, 0.4358],
+                                             ['2016-03-31', 0.14, 2.31, 1357915300, 0.4473],
+                                             ['2015-12-31', 0.43, 2.17, 1131596100, 0.1743],
+                                             ['2015-09-30', 0.34, 2, 05, 1131596100, 0.1415],
+                                             ['2015-06-30', 0.23, 1.92, 1127060600,
+                                              0.0982]]  # 日期，稀释每股收益，每股净资产，流通A股， EPS(TTM)
+        # sz002310
+        self._base_finance_value_sz002310 = [['2017-03-31', -0.01, 3.42, 1419758100, -0.9373],
+                                             ['2016-12-31', 0.51, 3.43, 1419758100, 0.5484],
+                                             ['2016-09-30', 0.20, 2.66, 1416089000, 0.1552],
+                                             ['2016-06-30', 0.29, 6.43, 566435600, 0.6425],
+                                             ['2016-03-31', -0.07, 6.13, 547201800, -0.1219],
+                                             ['2015-12-31', 0.6, 6.20, 558157300, 0.6083],
+                                             ['2015-09-30', 0.26, 5.84, 554991100, 0.1895],
+                                             ['2015-06-30', 0.16, 5.74, 554991100,
+                                              0.4263]]  # 日期，稀释每股收益，每股净资产，流通A股， EPS(TTM)
         self._base_finance_value_columns = ['quote_time', 'diluted_eps', 'BVPS', 'A_total', 'EPS_TTM']
 
     def get_named_minitue_capital(self, stock_code=None, time=None, df=None):
@@ -674,19 +686,20 @@ class C_GettingSVMData(C_GettingData):
         :param df_daily_record:
         :return:
         '''
+        base_finance_value = self._base_finance_value_sh600867
         if df_daily_record is None:return
-        if len(self._base_finance_value)==0:self._load_base_finance_value()
+        if len(base_finance_value) == 0: self._load_base_finance_value()
         df_daily_record['PE_TTM']=0.0
         df_daily_record['PB']=0.0
         i=0
-        for i in range(len(self._base_finance_value)):
-            quote_time = datetime.datetime.strptime(self._base_finance_value[i][0], '%Y-%m-%d')
-            diluted_eps = self._base_finance_value[i][1]
-            BVPS = self._base_finance_value[i][2]
-            A_total = self._base_finance_value[i][3]
-            EPS_TTM = self._base_finance_value[i][4]
+        for i in range(len(base_finance_value)):
+            quote_time = datetime.datetime.strptime(base_finance_value[i][0], '%Y-%m-%d')
+            diluted_eps = base_finance_value[i][1]
+            BVPS = base_finance_value[i][2]
+            A_total = base_finance_value[i][3]
+            EPS_TTM = base_finance_value[i][4]
             if i !=0:
-                quote_last_time = datetime.datetime.strptime(self._base_finance_value[i-1][0], '%Y-%m-%d')
+                quote_last_time = datetime.datetime.strptime(base_finance_value[i - 1][0], '%Y-%m-%d')
                 df = df_daily_record.loc[(df_daily_record.index >= quote_time) & (df_daily_record.index < quote_last_time)]
                 #print df
                 for index, row in df.iterrows():
@@ -739,24 +752,26 @@ def main():
     #pp.get_data_qq(stock_code='sh600221',period='week')
 
     stock_code = 'sh600867'
+    stock_code = 'sz002310'
     time = '14:55:00'
+    dimension = 'h'
     ps = C_GettingSVMData()
     # -------------------------------------------------------
-    get_named_minitue_svm_data(stock_code, pp, ps, time)
+    #get_named_minitue_svm_data(stock_code, pp, ps, time)
     # -----------------------------------------------------------
-    get_batch_svm_data(stock_code, pp, ps)
+    get_batch_svm_data(stock_code, pp, ps, dimension)
 
 
-def get_batch_svm_data(stock_code, pp, ps):
+def get_batch_svm_data(stock_code, pp, ps, dimension='l'):
     pp.get_data_qq(stock_code=stock_code, period='day')
     df = ps.load_data_from_db(stock_code=stock_code, period='day')
     ls = ps.get_daily_capital(stock_code=stock_code, days=300)
     # df = ps.load_capital_from_file_into_df(df, source_file='input\\600867Capital.csv')
     df = ps.load_captical_from_list_into_df(df, ls)
     df = ps._cal_PBPE(df)
-    # df = ps._add_higher_degree_parameters(df)
+    if dimension == 'h': df = ps._add_higher_degree_parameters(df)
     df, means, stds = ps.data_normalization(df)
-    df.to_csv('webdata\\stock_data_600867_LO.csv', header=True)
+    df.to_csv('webdata\\stock_data_002310_HO.csv', header=True)
 
 
 def get_named_minitue_svm_data(stock_code, pp, ps, time):

@@ -8,6 +8,9 @@ import matplotlib.pyplot as plt
 import multiprocessing as mp
 
 class SVMClassifier:
+    '''
+    This is mainly for Model Training using multiple processors technology on Ubuntu platform.
+    '''
 
     def __init__(self):
         self.source_path = "/home/marshao/SVMClassifier/"

@@ -9,6 +9,9 @@ import multiprocessing as mp
 
 
 class SVMClassifier:
+    '''
+    This is mainly for singal model training and prediction.
+    '''
     def __init__(self):
         self.source_path = "/home/marshao/SVMClassifier/"
         self.alphas = []  # list of langarange multipliers of Samples
