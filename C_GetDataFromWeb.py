@@ -753,8 +753,11 @@ def main():
 
     stock_code = 'sh600867'
     stock_code = 'sz002310'
-    time = '14:55:00'
-    dimension = 'h'
+    stock_code = 'sh600221'
+    stock_code = 'sz300146'
+
+    time = '09:55:00'
+    dimension = 'H'
     ps = C_GettingSVMData()
     # -------------------------------------------------------
     #get_named_minitue_svm_data(stock_code, pp, ps, time)
@@ -762,16 +765,18 @@ def main():
     get_batch_svm_data(stock_code, pp, ps, dimension)
 
 
-def get_batch_svm_data(stock_code, pp, ps, dimension='l'):
+def get_batch_svm_data(stock_code, pp, ps, dimension=None):
+    if dimension is None:
+        dimension = 'L'
     pp.get_data_qq(stock_code=stock_code, period='day')
     df = ps.load_data_from_db(stock_code=stock_code, period='day')
     ls = ps.get_daily_capital(stock_code=stock_code, days=300)
     # df = ps.load_capital_from_file_into_df(df, source_file='input\\600867Capital.csv')
     df = ps.load_captical_from_list_into_df(df, ls)
     df = ps._cal_PBPE(df)
-    if dimension == 'h': df = ps._add_higher_degree_parameters(df)
+    if dimension == 'H': df = ps._add_higher_degree_parameters(df)
     df, means, stds = ps.data_normalization(df)
-    df.to_csv('webdata\\stock_data_002310_HO.csv', header=True)
+    df.to_csv('webdata\\stock_data_%s_%sO.csv' % (stock_code, dimension), header=True)
 
 
 def get_named_minitue_svm_data(stock_code, pp, ps, time):
