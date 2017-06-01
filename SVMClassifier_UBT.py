@@ -1038,7 +1038,7 @@ def multi_batch_test_C_Sigma():
     processors = 12
     processes = []
     output_que = mp.Queue()
-    fn = open('600867_StockMultiC-Sigma-Results-LO.csv', "w+")
+    fn = open('output/002310_StockMultiC-Sigma-Results-HO.csv', "w+")
     # fn = open('StockMultiModelResults.csv', "w+")
     for each_C in C:
         for each_Sigma in Sigma:
@@ -1058,13 +1058,14 @@ def multi_batch_test_C_Sigma():
 
 def task(model, each_C, each_Sigma, fn, output_que):
     TaskModel = SVMClassifier()
-    TaskModel.LoadData('CV', Training_source='600867_Train_LO.csv', CrossValidation_source='600867_CV_LO.csv')
+    TaskModel.LoadData('CV', Training_source='input/002310_Train_HO.csv',
+                       CrossValidation_source='input/002310_CV_HO.csv')
     TaskModel._Update_Variables(C=each_C, Sigma=each_Sigma, T=0.001, Step=0.01, KernalType='g', alpha_ini=True,
                             alpha_val=0.1,
                             Kernal_ini=True)
-    TaskModel.Train_Model(Loop=3, Model_File='StockTrainingModel2.csv')
-    TaskModel.Load_Model('StockTrainingModel2.csv')
-    TaskModel.Cross_Validate_Model(KernalType='g', Output='StockTest2.csv')
+    TaskModel.Train_Model(Loop=3, Model_File='model/002310_Model_HO.csv')
+    TaskModel.Load_Model('model/002310_Model_HO.csv')
+    TaskModel.Cross_Validate_Model(KernalType='g', Output='output/002310_Test_HO.csv')
     Precesion, Recall, Accuracy, TP, FP, TN, FN = TaskModel.Performance_Diag(Model='C')
 
     # model.ModelLearningCurve.append([TaskModel.Eidx_Training, TaskModel.Eidx_CV])
@@ -1172,6 +1173,7 @@ def processes_pool(tasks, processors):
                 if tasks[k].is_alive():
                     alive = True
                 time.sleep(1)
+
         i += 1
 
 if __name__ == '__main__':
