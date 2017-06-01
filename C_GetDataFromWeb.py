@@ -807,5 +807,8 @@ def get_batch_svm_data_mean_stds(stock_code, pp, ps):
     df, means, stds = ps.data_normalization(df)
     return means, stds
 
+
+# load
+
 if __name__ == '__main__':
     main()
