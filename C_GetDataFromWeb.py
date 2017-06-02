@@ -751,18 +751,19 @@ def main():
     # pp.get_data_qq(stock_code='sh600221', period='day')
     #pp.get_data_qq(stock_code='sh600221',period='week')
 
-    stock_code = 'sh600867'
-    stock_code = 'sz002310'
-    stock_code = 'sh600221'
-    stock_code = 'sz300146'
+    stock_code = ['sh600867', 'sz002310']
+    # stock_code = 'sz002310'
+    # stock_code = 'sh600221'
+    # stock_code = 'sz300146'
 
-    time = '09:55:00'
+    time = '14:55:00'
     dimension = 'H'
     ps = C_GettingSVMData()
+    for stock in stock_code:
     # -------------------------------------------------------
-    #get_named_minitue_svm_data(stock_code, pp, ps, time)
+    get_named_minitue_svm_data(stock, pp, ps, time)
     # -----------------------------------------------------------
-    get_batch_svm_data(stock_code, pp, ps, dimension)
+    #get_batch_svm_data(stock, pp, ps, dimension)
 
 
 def get_batch_svm_data(stock_code, pp, ps, dimension=None):
