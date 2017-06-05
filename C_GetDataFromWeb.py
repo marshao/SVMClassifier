@@ -771,10 +771,10 @@ def main():
     dimension = 'H'
     ps = C_GettingSVMData()
     for stock in stock_code:
+        get_batch_svm_data(stock, pp, ps, dimension)
     # -------------------------------------------------------
     # get_named_minitue_svm_data(stock, pp, ps, time)
     # -----------------------------------------------------------
-    get_batch_svm_data(stock, pp, ps, dimension)
 
 
 def get_batch_svm_data(stock_code, pp, ps, dimension=None):
