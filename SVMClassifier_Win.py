@@ -1054,9 +1054,11 @@ def predict():
 
 def singal_run():
     model = SVMClassifier()
+    c = 0.7
+    sig = 0.1
     model.LoadData('CV', Training_source='input\\600867_Train_HO.csv', CrossValidation_source='input\\600867_CV_HO.csv')
-    model._Update_Variables(C=0.7, Sigma=0.1, T=0.001, Step=0.01, KernalType='g', alpha_ini=True, alpha_val=0.1,
-                            Kernal_ini=True, Max_iter=3000)
+    model._Update_Variables(C=c, Sigma=sig, T=0.001, Step=0.01, KernalType='g', alpha_ini=True, alpha_val=0.1,
+                            Kernal_ini=True, Max_iter=300)
     model.Train_Model(Loop=3, Model_File='model\\600867_TrainingModel_HO.csv')
     model.Load_Model('model\\600867_TrainingModel_HO.csv')
     model.Cross_Validate_Model(KernalType='g', Output='output\\600867_TestResult_HO.csv')
@@ -1064,7 +1066,7 @@ def singal_run():
     Precesion, Recall, Accuracy = model.Performance_Diag(Model='C')
     print(
         'C: %s,  Sigma: %s, Precesion: %s, Recall: %s, Accuracy: %s, Eidx_Training: %s, Eidx_CV: %s \n' % (
-            1.0, 0.1, Precesion, Recall, Accuracy, model.Eidx_Training, model.Eidx_CV))
+            c, sig, Precesion, Recall, Accuracy, model.Eidx_Training, model.Eidx_CV))
 
 
 def batch_test_C_Sigma():
