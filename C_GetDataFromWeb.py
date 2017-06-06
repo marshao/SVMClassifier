@@ -697,7 +697,6 @@ class C_GettingSVMData(C_GettingData):
         '''
 
         base_finance_value = self._base_finance_value[stock_code]
-        print base_finance_value
         if df_daily_record is None:return
         if len(base_finance_value) == 0: self._load_base_finance_value()
         df_daily_record['PE_TTM']=0.0
@@ -771,9 +770,9 @@ def main():
     dimension = 'H'
     ps = C_GettingSVMData()
     for stock in stock_code:
-        get_batch_svm_data(stock, pp, ps, dimension)
+        # get_batch_svm_data(stock, pp, ps, dimension)
     # -------------------------------------------------------
-    # get_named_minitue_svm_data(stock, pp, ps, time)
+        get_named_minitue_svm_data(stock, pp, ps, time)
     # -----------------------------------------------------------
 
 
@@ -805,7 +804,7 @@ def get_named_minitue_svm_data(stock_code, pp, ps, time):
         else:
             continue
     cols_to_write = ['nor_close_price', 'nor_trading_volumn', 'nor_Capital', 'nor_PE_TTM', 'nor_PB']
-    df[cols_to_write].to_csv('webdata\\stock_data_%s.csv' % stock_code, header=False, index=False)
+    df[cols_to_write].to_csv('PredictFiles\\stock_data_%s.csv' % stock_code, header=False, index=False)
 
 
 def get_batch_svm_data_mean_stds(stock_code, pp, ps):
