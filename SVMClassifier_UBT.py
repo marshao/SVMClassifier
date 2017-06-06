@@ -946,6 +946,7 @@ class SVMClassifier:
         :return:
         '''
         # The least parameter count
+        plt.ion()
         if model is None:
             model = 'Parameter'
             base_parameter = 5
@@ -966,6 +967,8 @@ class SVMClassifier:
         plt.xlabel(u'Number of Parameters')
         plt.ylabel((u'Sum of Errors'))
         plt.show()
+        time.sleep(2)
+        plt.close('all')
 
     def pause(self):
         programPause = raw_input("Press any key to continue")
@@ -981,14 +984,41 @@ def main():
     #batch_test_parameters()
     # batch_test_sample_sizes()
     # batch_test_C_Sigma()
-    multi_batch_test_C_Sigma()
+    tr_para = [['output/600867_StockMultiC-Sigma-Results-HO_2.csv',
+                'input/600867_Train_HO.csv', 'input/600867_CV_HO.csv',
+                'model/600867_Model_HO.csv', 'output/600867_Test_HO.csv'],
+               ['output/600867_StockMultiC-Sigma-Results-LO_2.csv',
+                'input/600867_Train_LO.csv', 'input/600867_CV_LO.csv',
+                'model/600867_Model_LO.csv', 'output/600867_Test_LO.csv'],
+               ['output/600221_StockMultiC-Sigma-Results-HO_2.csv',
+                'input/600221_Train_HO.csv', 'input/600221_CV_HO.csv',
+                'model/600221_Model_HO.csv', 'output/600221_Test_HO.csv'],
+               ['output/600221_StockMultiC-Sigma-Results-LO_2.csv',
+                'input/600221_Train_LO.csv', 'input/600221_CV_LO.csv',
+                'model/600221_Model_LO.csv', 'output/600221_Test_LO.csv'],
+               ['output/002310_StockMultiC-Sigma-Results-HO_2.csv',
+                'input/002310_Train_HO.csv', 'input/002310_CV_HO.csv',
+                'model/002310_Model_HO.csv', 'output/002310_Test_HO.csv'],
+               ['output/002310_StockMultiC-Sigma-Results-LO_2.csv',
+                'input/002310_Train_LO.csv', 'input/002310_CV_LO.csv',
+                'model/002310_Model_LO.csv', 'output/002310_Test_LO.csv'],
+               ['output/300146_StockMultiC-Sigma-Results-HO_2.csv',
+                'input/300146_Train_HO.csv', 'input/300146_CV_HO.csv',
+                'model/300146_Model_HO.csv', 'output/300146_Test_HO.csv'],
+               ['output/300146_StockMultiC-Sigma-Results-LO_2.csv',
+                'input/300146_Train_LO.csv', 'input/300146_CV_LO.csv',
+                'model/300146_Model_LO.csv', 'output/300146_Test_LO.csv'],
+               ]
+    for i in range(0, 8):
+        multi_batch_test_C_Sigma(tr_para[i])
+
 
 
 def singal_run():
     model = SVMClassifier()
     model.LoadData('CV', Training_source='TrainingLO.csv', CrossValidation_source='CVL.csv')
     model._Update_Variables(C=1.0, Sigma=0.1, T=0.001, Step=0.01, KernalType='g', alpha_ini=True, alpha_val=0.1,
-                            Kernal_ini=True, Max_iter=3000)
+                            Kernal_ini=True, Max_iter=300)
     model.Train_Model(Loop=3, Model_File='StockTrainingModel2.csv')
     model.Load_Model('StockTrainingModel2.csv')
     model.Cross_Validate_Model(KernalType='g', Output='StockTest2.csv')
@@ -1026,7 +1056,7 @@ def batch_test_C_Sigma():
     model.Plot_Learning_Curve()
 
 
-def multi_batch_test_C_Sigma():
+def multi_batch_test_C_Sigma(tr_para):
     model = SVMClassifier()
     # model.LoadData('CV', Training_source='TrainingHO.csv', CrossValidation_source='CVH.csv')
     C = [0.6, 0.7, 0.8, 1.0, 1.3, 1.5, 1.8, 2.0, 3.0, 4.0]
@@ -1038,11 +1068,12 @@ def multi_batch_test_C_Sigma():
     processors = 12
     processes = []
     output_que = mp.Queue()
-    fn = open('output/600867_StockMultiC-Sigma-Results-HO_2.csv', "w+")
+    # fn = open('output/600867_StockMultiC-Sigma-Results-HO_2.csv', "w+")
+    fn = open(tr_para[0], "w+")
     # fn = open('StockMultiModelResults.csv', "w+")
     for each_C in C:
         for each_Sigma in Sigma:
-            p = mp.Process(target=task, args=(model, each_C, each_Sigma, fn, output_que))
+            p = mp.Process(target=task, args=(tr_para, each_C, each_Sigma, fn, output_que))
             processes.append(p)
 
     processes_pool(tasks=processes, processors=processors)
@@ -1056,16 +1087,20 @@ def multi_batch_test_C_Sigma():
     model.Plot_Learning_Curve()
 
 
-def task(model, each_C, each_Sigma, fn, output_que):
+def task(tr_para, each_C, each_Sigma, fn, output_que):
     TaskModel = SVMClassifier()
-    TaskModel.LoadData('CV', Training_source='input/600867_Train_HO.csv',
-                       CrossValidation_source='input/600867_CV_HO.csv')
+    # TaskModel.LoadData('CV', Training_source='input/600867_Train_HO.csv',
+    #                   CrossValidation_source='input/600867_CV_HO.csv')
+    TaskModel.LoadData('CV', tr_para[1], CrossValidation_source=tr_para[2])
     TaskModel._Update_Variables(C=each_C, Sigma=each_Sigma, T=0.001, Step=0.01, KernalType='g', alpha_ini=True,
-                            alpha_val=0.1,
-                            Kernal_ini=True)
-    TaskModel.Train_Model(Loop=3, Model_File='model/600867_Model_HO.csv')
-    TaskModel.Load_Model('model/600867_Model_HO.csv')
-    TaskModel.Cross_Validate_Model(KernalType='g', Output='output/600867_Test_HO.csv')
+                                alpha_val=0.1,
+                                Kernal_ini=True, Max_iter=300)
+    # TaskModel.Train_Model(Loop=3, Model_File='model/600867_Model_HO.csv')
+    TaskModel.Train_Model(Loop=3, Model_File=tr_para[3])
+    # TaskModel.Load_Model('model/600867_Model_HO.csv')
+    TaskModel.Load_Model(tr_para[3])
+    # TaskModel.Cross_Validate_Model(KernalType='g', Output='output/600867_Test_HO.csv')
+    TaskModel.Cross_Validate_Model(KernalType='g', Output=tr_para[4])
     Precesion, Recall, Accuracy, TP, FP, TN, FN = TaskModel.Performance_Diag(Model='C')
 
     # model.ModelLearningCurve.append([TaskModel.Eidx_Training, TaskModel.Eidx_CV])
