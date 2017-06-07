@@ -1,5 +1,0 @@
-C: 4.0,  Sigma: 0.8, Precesion: 0.56, Recall: 0.71, Accuracy: 0.6, Eidx_Training: 49.72783, Eidx_CV: 29.29555 
-C: 4.0,  Sigma: 0.8, Precesion: 0.64, Recall: 0.41, Accuracy: 0.53, Eidx_Training: 92.52071, Eidx_CV: 32.36552 
-C: 4.0,  Sigma: 0.8, Precesion: 0.71, Recall: 0.45, Accuracy: 0.73, Eidx_Training: 260.93593, Eidx_CV: 31.47142 
-C: 4.0,  Sigma: 0.8, Precesion: 0.57, Recall: 1.0, Accuracy: 0.57, Eidx_Training: 674.02105, Eidx_CV: 93.84088 
-C: 4.0,  Sigma: 0.8, Precesion: 0.31, Recall: 1.0, Accuracy: 0.33, Eidx_Training: 419.26865, Eidx_CV: 61.98686 
