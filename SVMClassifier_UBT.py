@@ -946,7 +946,7 @@ class SVMClassifier:
         :return:
         '''
         # The least parameter count
-        plt.ion()
+        # plt.ion()
         plt.figure(1)
         if model is None:
             model = 'Parameter'
@@ -968,9 +968,9 @@ class SVMClassifier:
         plt.xlabel(u'Number of Parameters')
         plt.ylabel((u'Sum of Errors'))
         plt.savefig('figure.png')
-        plt.show()
-        time.sleep(2)
-        plt.close(1)
+        # plt.show()
+        # time.sleep(2)
+        #plt.close(1)
 
     def pause(self):
         programPause = raw_input("Press any key to continue")
