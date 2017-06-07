@@ -947,6 +947,7 @@ class SVMClassifier:
         '''
         # The least parameter count
         plt.ion()
+        plt.figure(1)
         if model is None:
             model = 'Parameter'
             base_parameter = 5
@@ -966,9 +967,10 @@ class SVMClassifier:
             plt.annotate(str(j), xy=(i, j))
         plt.xlabel(u'Number of Parameters')
         plt.ylabel((u'Sum of Errors'))
+        plt.savefig('figure.png')
         plt.show()
         time.sleep(2)
-        plt.close('all')
+        plt.close(1)
 
     def pause(self):
         programPause = raw_input("Press any key to continue")
@@ -1009,7 +1011,7 @@ def main():
                 'input/300146_Train_LO.csv', 'input/300146_CV_LO.csv',
                 'model/300146_Model_LO.csv', 'output/300146_Test_LO.csv'],
                ]
-    for i in range(0, 8):
+    for i in range(2, 8):
         multi_batch_test_C_Sigma(tr_para[i])
 
 
