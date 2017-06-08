@@ -475,30 +475,38 @@ class C_GettingSVMData(C_GettingData):
                                                  ['2015-12-31', -1.61, 0.5, 102955400, -2.4462],
                                                  ['2015-09-30', -1.1795, 0.92, 102955400, -1.6715],
                                                  ['2015-06-30', -0.6977, 1.4, 102955400, -0.8785]],
-                                    'sh600867': [['2017-03-31', 0.15, 2.91, 1363302500, 0.3567],
-                                                 ['2016-12-31', 0.46, 2.77, 1363302500, 0.4714],
-                                                 ['2016-09-30', 0.36, 2.64, 1360093300, 0.4601],
-                                                 ['2016-06-30', 0.23, 1.86, 1357915300, 0.4358],
-                                                 ['2016-03-31', 0.14, 2.31, 1357915300, 0.4473],
+                                    'sh600867': [['2017-03-31', 0.15, 2.91, 1363302500, 0.0365],
+                                                 ['2016-12-31', 0.46, 2.77, 1363302500, 0.1083],
+                                                 ['2016-09-30', 0.36, 2.64, 1360093300, 0.0971],
+                                                 ['2016-06-30', 0.23, 1.86, 1357915300, 0.0727],
+                                                 ['2016-03-31', 0.14, 2.31, 1357915300, 0.0843],
                                                  ['2015-12-31', 0.43, 2.17, 1131596100, 0.1743],
                                                  ['2015-09-30', 0.34, 2, 05, 1131596100, 0.1415],
                                                  ['2015-06-30', 0.23, 1.92, 1127060600, 0.0982]],
-                                    'sz002310': [['2017-03-31', -0.01, 3.42, 1419758100, -0.9373],
-                                                 ['2016-12-31', 0.51, 3.43, 1419758100, 0.5484],
-                                                 ['2016-09-30', 0.20, 2.66, 1416089000, 0.1552],
-                                                 ['2016-06-30', 0.29, 6.43, 566435600, 0.6425],
-                                                 ['2016-03-31', -0.07, 6.13, 547201800, -0.1219],
-                                                 ['2015-12-31', 0.6, 6.20, 558157300, 0.6083],
-                                                 ['2015-09-30', 0.26, 5.84, 554991100, 0.1895],
-                                                 ['2015-06-30', 0.16, 5.74, 554991100, 0.4263]],
-                                    'sh600221': [['2017-03-31', 0.0497, 3.08, 11812064200, 0.1442],
-                                                 ['2016-12-31', 0.21, 3.03, 11812064200, 0.2657],
-                                                 ['2016-09-30', 0.27, 3.03, 11812064200, 0.3315],
-                                                 ['2016-06-30', 0.137, 2.68, 11812064200, 0.2602],
-                                                 ['2016-03-31', 0.1183, 2.65, 11812064200, 0.2982],
-                                                 ['2015-12-31', 0.2460, 2.54, 11812064200, 0.2542],
-                                                 ['2015-09-30', 0.2040, 2.46, 11812064200, 0.4302],
-                                                 ['2015-06-30', 0.1315, 2.43, 11812064200, 0.3550]]
+                                    'sz002310': [['2017-03-31', -0.01, 3.42, 1419758100, 0.4088],
+                                                 ['2016-12-31', 0.51, 3.43, 1419758100, 0.1241],
+                                                 ['2016-09-30', 0.20, 2.66, 1416089000, 0.1841],
+                                                 ['2016-06-30', 0.29, 6.43, 566435600, 0.2183],
+                                                 ['2016-03-31', -0.07, 6.13, 547201800, 0.0022],
+                                                 ['2015-12-31', 0.6, 6.20, 558157300, -0.0895],
+                                                 ['2015-09-30', 0.26, 5.84, 554991100, -0.2729],
+                                                 ['2015-06-30', 0.16, 5.74, 554991100, -0.3406]],
+                                    'sh600221': [['2017-03-31', 0.0497, 3.08, 11812064200, -0.0513],
+                                                 ['2016-12-31', 0.21, 3.03, 11812064200, 0.0115],
+                                                 ['2016-09-30', 0.27, 3.03, 11812064200, 0.0773],
+                                                 ['2016-06-30', 0.137, 2.68, 11812064200, 0.006],
+                                                 ['2016-03-31', 0.1183, 2.65, 11812064200, 0.044],
+                                                 ['2015-12-31', 0.2460, 2.54, 11812064200, 0.0348],
+                                                 ['2015-09-30', 0.2040, 2.46, 11812064200, 0.2108],
+                                                 ['2015-06-30', 0.1315, 2.43, 11812064200, 0.1357]],
+                                    'sz300146': [['2017-03-31', 0.1944, 3.11, 871425000, 0.0716],
+                                                 ['2016-12-31', 0.37, 3.18, 860141000, -0.1166],
+                                                 ['2016-09-30', 0.39, 3.23, 860141000, 0.0625],
+                                                 ['2016-06-30', 0.25, 3.08, 860141000, 0.3205],
+                                                 ['2016-03-31', 0.3088, 5.97, 860141000, 0.7921],
+                                                 ['2015-12-31', 0.89, 3.16, 359358600, 0.3883],
+                                                 ['2015-09-30', 0.82, 6.2, 334988400, 1.7371],
+                                                 ['2015-06-30', 0.59, 5.95, 337432500, 1.2362]]
                                     }
         # 日期，稀释每股收益，每股净资产，流通A股， EPS(TTM)
         self._base_finance_value_columns = ['quote_time', 'diluted_eps', 'BVPS', 'A_total', 'EPS_TTM']
@@ -718,6 +726,7 @@ class C_GettingSVMData(C_GettingData):
                     df_daily_record.set_value(index, 'PE_TTM', PE_TTM)
                     df_daily_record.set_value(index, 'PB', PB)
             else:
+                # print df_daily_record.index
                 df = df_daily_record.loc[(df_daily_record.index >= quote_time)]
                 for index, row in df.iterrows():
                     PE_TTM = row['close_price']/EPS_TTM
@@ -761,7 +770,7 @@ def main():
     # pp.get_data_qq(stock_code='sh600221', period='day')
     #pp.get_data_qq(stock_code='sh600221',period='week')
 
-    stock_code = ['sh600221', 'sh600867', 'sz002310']
+    stock_code = ['sh600221', 'sh600867', 'sz002310', 'sz300146']
     # stock_code = 'sz002310'
     # stock_code = 'sh600221'
     # stock_code = 'sz300146'
@@ -772,7 +781,7 @@ def main():
     for stock in stock_code:
         # get_batch_svm_data(stock, pp, ps, dimension)
     # -------------------------------------------------------
-        get_named_minitue_svm_data(stock, pp, ps, time)
+        get_named_minitue_svm_data(stock, pp, ps, time, dimension)
     # -----------------------------------------------------------
 
 
@@ -790,11 +799,19 @@ def get_batch_svm_data(stock_code, pp, ps, dimension=None):
     df.to_csv('webdata\\stock_data_%s_%sO.csv' % (stock_code, dimension), header=True)
 
 
-def get_named_minitue_svm_data(stock_code, pp, ps, time):
+def get_named_minitue_svm_data(stock_code, pp, ps, time, dimension=None):
+    if dimension is None:
+        dimension = 'H'
     df = ps.get_named_minitue_price(stock_code=stock_code, time=time)
     df = ps.get_named_minitue_capital(stock_code=stock_code, time=time, df=df)
     df = ps._cal_PBPE(stock_code, df)
-    # df = ps._add_higher_degree_parameters(df)
+    if dimension == 'H':
+        df = ps._add_higher_degree_parameters(df)
+        cols_to_write = ['nor_close_price', 'nor_trading_volumn', 'nor_Capital', 'nor_PE_TTM', 'nor_PB',
+                         'nor_close_price-Order2', 'nor_trading_volumn-Order2', 'nor_Capital-Order2',
+                         'nor_PE_TTM-Order2', 'nor_PB-Order2']
+    else:
+        cols_to_write = ['nor_close_price', 'nor_trading_volumn', 'nor_Capital', 'nor_PE_TTM', 'nor_PB']
     # Data normalization using batch means and stds
     means, stds = get_batch_svm_data_mean_stds(stock_code, pp, ps)
     for column in df:
@@ -803,7 +820,6 @@ def get_named_minitue_svm_data(stock_code, pp, ps, time):
             df[column_name] = (df[column] - means[column]) / stds[column]
         else:
             continue
-    cols_to_write = ['nor_close_price', 'nor_trading_volumn', 'nor_Capital', 'nor_PE_TTM', 'nor_PB']
     df[cols_to_write].to_csv('PredictFiles\\stock_data_%s.csv' % stock_code, header=False, index=False)
 
 

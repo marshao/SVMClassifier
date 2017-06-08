@@ -1018,8 +1018,8 @@ def main():
     # profile.run("run()", "prof1.txt")
     # p = pstats.Stats('prof1.txt')
     # p.sort_stats('time').print_stats()
-    singal_run()
-    # predict()
+    # singal_run()
+    predict()
     # batch_test_parameters()
     # batch_test_sample_sizes()
     #multi_batch_test_C_Sigma()
@@ -1027,15 +1027,19 @@ def main():
 
 
 def predict():
-    pre_para = {'Training_source': ['PredictFiles\\600867_Train_LO.csv', 'PredictFiles\\600867_Train_HO.csv',
-                                    'PredictFiles\\002310_Train_LO.csv'],
-                'parameter': [[2.0, 0.08], [0.7, 0.1], [0.7, 0.05]],
-                'train_model': ['PredictFiles\\600867_TrainingModel_LO.csv',
-                                'PredictFiles\\600867_TrainingModel_HO.csv', 'PredictFiles\\002310_TrainingModel.csv'],
-                'xValueDir': ['PredictFiles\\stock_data_sh600867.csv', 'PredictFiles\\stock_data_sh600867.csv',
-                              'PredictFiles\\stock_data_sz002310.csv'],
-                'yOutputDir': ['output\\stock_pre_sh600867_LO.csv', 'output\\stock_pre_sh600867_HO.csv',
-                               'output\\stock_pre_sz002310.csv']}
+    pre_para = {'Training_source': ['PredictFiles\\600867_Train_HO.csv', 'PredictFiles\\600221_Train_HO.csv',
+                                    'PredictFiles\\002310_Train_HO.csv', 'PredictFiles\\300146_Train_HO.csv'],
+                'parameter': [[0.6, 1.5], [2.0, 2.0], [0.6, 1.5], [1.0, 1.5]],
+                'train_model': ['PredictFiles\\600867_TrainingModel_HO.csv',
+                                'PredictFiles\\600221_TrainingModel_HO.csv',
+                                'PredictFiles\\002310_TrainingModel_HO.csv',
+                                'PredictFiles\\300146_TrainingModel_HO.csv'],
+                'xValueDir': ['PredictFiles\\stock_data_sh600867.csv', 'PredictFiles\\stock_data_sh600221.csv',
+                              'PredictFiles\\stock_data_sz002310.csv', 'PredictFiles\\stock_data_sz300146.csv'],
+                'yOutputDir': ['output\\Prediction\\stock_pre_sh600867_LO.csv',
+                               'output\\Prediction\\stock_pre_sh600221_HO.csv',
+                               'output\\Prediction\\stock_pre_sz002310.csv',
+                               'output\\Prediction\\stock_pre_sz300146.csv']}
     model = SVMClassifier()
     # Training_source = ['PredictFiles\\600867_Train_LO.csv', 'PredictFiles\\002310_Train_LO.csv']
     # parameter = [[2.0, 0.08], [0.7, 0.05]]
@@ -1043,25 +1047,25 @@ def predict():
     # xValueDir = ['PredictFiles\\stock_data_sh600867.csv', 'PredictFiles\\stock_data_sz002310.csv']
     #yOutputDir = ['output\\stock_pre_sh600867.csv', 'output\\stock_pre_sz002310.csv']
     i = 0
-    for i in range(0, 2):
+    for i in range(0, 4):
         model.LoadData(Training_source=pre_para['Training_source'][i])
         model._Update_Variables(C=pre_para['parameter'][i][0], Sigma=pre_para['parameter'][i][1], T=0.001, Step=0.01,
                                 KernalType='g',
                                 alpha_ini=True, alpha_val=0.1,
-                                Kernal_ini=True, Max_iter=3000)
+                                Kernal_ini=True, Max_iter=300)
         model.Load_Model(pre_para['train_model'][i])
         model.Predict(xValueDir=pre_para['xValueDir'][i], yOutputDir=pre_para['yOutputDir'][i], KernalType='g')
 
 def singal_run():
     model = SVMClassifier()
-    c = 0.7
-    sig = 0.1
-    model.LoadData('CV', Training_source='input\\600867_Train_HO.csv', CrossValidation_source='input\\600867_CV_HO.csv')
+    c = 2.0
+    sig = 2.0
+    model.LoadData('CV', Training_source='input\\600221_Train_HO.csv', CrossValidation_source='input\\600221_CV_HO.csv')
     model._Update_Variables(C=c, Sigma=sig, T=0.001, Step=0.01, KernalType='g', alpha_ini=True, alpha_val=0.1,
                             Kernal_ini=True, Max_iter=300)
-    model.Train_Model(Loop=3, Model_File='model\\600867_TrainingModel_HO.csv')
-    model.Load_Model('model\\600867_TrainingModel_HO.csv')
-    model.Cross_Validate_Model(KernalType='g', Output='output\\600867_TestResult_HO.csv')
+    model.Train_Model(Loop=3, Model_File='model\\600221_TrainingModel_HO.csv')
+    model.Load_Model('model\\600221_TrainingModel_HO.csv')
+    model.Cross_Validate_Model(KernalType='g', Output='output\\600221_TestResult_HO.csv')
     # model.Test_Model(KernalType='g', Output='StockTest2.csv')
     Precesion, Recall, Accuracy = model.Performance_Diag(Model='C')
     print(
