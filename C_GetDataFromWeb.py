@@ -775,7 +775,7 @@ def main():
     # stock_code = 'sh600221'
     # stock_code = 'sz300146'
 
-    time = '14:55:00'
+    time = '14:25:00'
     dimension = 'H'
     ps = C_GettingSVMData()
     for stock in stock_code:
