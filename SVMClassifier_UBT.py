@@ -1013,8 +1013,11 @@ def main():
                ['output/600221_StockMultiC-Sigma-Results-HO_3Pow.csv',
                 'input/600221_Train_HO_3Pow.csv', 'input/600221_CV_HO_3Pow.csv',
                 'model/600221_Model_HO__3Pow.csv', 'output/600221_Test_HO_3Pow.csv'],
+               ['output/600221_StockMultiC-Sigma-Results-HO_More.csv',
+                'input/600221_Train_HO_More.csv', 'input/600221_CV_HO_More.csv',
+                'model/600221_Model_HO__More.csv', 'output/600221_Test_HO_More.csv'],
                ]
-    for i in range(8, 9):
+    for i in range(9, 10):
         multi_batch_test_C_Sigma(tr_para[i])
 
 
