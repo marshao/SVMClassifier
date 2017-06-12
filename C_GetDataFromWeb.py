@@ -740,6 +740,52 @@ class C_GettingSVMData(C_GettingData):
         # print df_daily_record
         return df_daily_record
 
+    def _cal_StockAmp(self, stock_code, df_daily_record):
+        '''
+        This is to calculate the Amplitude Õñ·ù
+        :param stock_code:
+        :param df_daily_record:
+        :return:
+        '''
+        df_daily_record['SA'] = 0.0
+        # df_iter = df_daily_record.iterrows()
+
+        for i in range(0, (df_daily_record.shape[0] - 1)):
+            # df_daily_record.set_value(index, 'PB',PB)
+            # print  df_daily_record
+            index = df_daily_record.index.values[i]
+            SA = (df_daily_record.iloc[i]['high_price'] - df_daily_record.iloc[i]['low_price']) / \
+                 df_daily_record.iloc[i + 1]['close_price']
+            df_daily_record.set_value(index, 'SA', SA)
+        return df_daily_record
+
+    def _cal_TurnOver(self, stock_code, df_daily_record):
+        base_finance_value = self._base_finance_value[stock_code]
+        if df_daily_record is None: return
+        if len(base_finance_value) == 0: self._load_base_finance_value()
+        df_daily_record['Turn_Over'] = 0.0
+        i = 0
+
+        for i in range(len(base_finance_value)):
+            quote_time = datetime.datetime.strptime(base_finance_value[i][0], '%Y-%m-%d')
+            A_total = base_finance_value[i][3]
+            if i != 0:
+                quote_last_time = datetime.datetime.strptime(base_finance_value[i - 1][0], '%Y-%m-%d')
+                df = df_daily_record.loc[
+                    (df_daily_record.index >= quote_time) & (df_daily_record.index < quote_last_time)]
+                # print df
+                for index, row in df.iterrows():
+                    Turn_Over = row['trading_volumn'] / A_total
+                    df_daily_record.set_value(index, 'Turn_Over', Turn_Over)
+            else:
+                # print df_daily_record.index
+                df = df_daily_record.loc[(df_daily_record.index >= quote_time)]
+                for index, row in df.iterrows():
+                    Turn_Over = row['trading_volumn'] / A_total
+                    df_daily_record.set_value(index, 'Turn_Over', Turn_Over)
+            i += 1
+        return df_daily_record
+
     def _add_higher_degree_parameters(self, df, degree=2):
         '''
         Add higher order parameters in to df
@@ -779,8 +825,9 @@ def main():
     time = '14:25:00'
     dimension = 'H'
     ps = C_GettingSVMData()
-    for stock in stock_code:
-        get_batch_svm_data(stock, pp, ps, dimension)
+    get_batch_svm_data('sh600221', pp, ps, dimension)
+    # for stock in stock_code:
+    #get_batch_svm_data(stock, pp, ps, dimension)
     # -------------------------------------------------------
         # get_named_minitue_svm_data(stock, pp, ps, time, dimension)
     # -----------------------------------------------------------
@@ -795,11 +842,15 @@ def get_batch_svm_data(stock_code, pp, ps, dimension=None):
     # df = ps.load_capital_from_file_into_df(df, source_file='input\\600867Capital.csv')
     df = ps.load_captical_from_list_into_df(df, ls)
     df = ps._cal_PBPE(stock_code, df)
+    # -----------------------------------------
+    df = ps._cal_StockAmp(stock_code, df)
+    df = ps._cal_TurnOver(stock_code, df)
+    #------------------------------------------
     if dimension == 'H':
         df = ps._add_higher_degree_parameters(df)
-        df = ps._add_higher_degree_parameters(df, degree=3)
+        #df = ps._add_higher_degree_parameters(df, degree=3)
     df, means, stds = ps.data_normalization(df)
-    df.to_csv('webdata\\stock_data_%s_%sO_3Pow.csv' % (stock_code, dimension), header=True)
+    df.to_csv('webdata\\stock_data_%s_%sO_More.csv' % (stock_code, dimension), header=True)
 
 
 def get_named_minitue_svm_data(stock_code, pp, ps, time, dimension=None):
@@ -808,6 +859,10 @@ def get_named_minitue_svm_data(stock_code, pp, ps, time, dimension=None):
     df = ps.get_named_minitue_price(stock_code=stock_code, time=time)
     df = ps.get_named_minitue_capital(stock_code=stock_code, time=time, df=df)
     df = ps._cal_PBPE(stock_code, df)
+    # -----------------------------------------
+    df = ps._cal_StockAmp(stock_code, df)
+    df = ps._cal_TurnOver(stock_code, df)
+    # -----------------------------------------
     if dimension == 'H':
         df = ps._add_higher_degree_parameters(df)
         cols_to_write = ['nor_close_price', 'nor_trading_volumn', 'nor_Capital', 'nor_PE_TTM', 'nor_PB',
@@ -833,6 +888,10 @@ def get_batch_svm_data_mean_stds(stock_code, pp, ps):
     # df = ps.load_capital_from_file_into_df(df, source_file='input\\600867Capital.csv')
     df = ps.load_captical_from_list_into_df(df, ls)
     df = ps._cal_PBPE(stock_code, df)
+    # -----------------------------------------
+    df = ps._cal_StockAmp(stock_code, df)
+    df = ps._cal_TurnOver(stock_code, df)
+    # -----------------------------------------
     df = ps._add_higher_degree_parameters(df)
     df, means, stds = ps.data_normalization(df)
     return means, stds
