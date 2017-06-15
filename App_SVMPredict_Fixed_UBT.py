@@ -2,41 +2,42 @@
 # -*- coding: utf8 -*-
 
 
-import math, time
+import math, time, datetime
 import numpy as np
 import matplotlib.pyplot as plt
 import multiprocessing as mp
 
+
 class SVMClassifier:
     '''
-    This is mainly for Model Training using multiple processors technology on Ubuntu platform.
+    This is mainly for singal model training and prediction.
     '''
 
     def __init__(self):
         self.source_path = "/home/marshao/SVMClassifier/"
-        self.alphas = []    #list of langarange multipliers of Samples
-        self.b = 0         #b for determine function
-        self.TrainingSamples = []   #Matrix of Training Sample
+        self.alphas = []  # list of langarange multipliers of Samples
+        self.b = 0  # b for determine function
+        self.TrainingSamples = []  # Matrix of Training Sample
         self.TrainingLabels = []  # Matrix of Training Labels
-        self.CVSamples = []       #Matrix of CV samples
+        self.CVSamples = []  # Matrix of CV samples
         self.CVLabels = []
         self.TestingSamples = []  # Matrix of test samples
-        self.TestingLabels = []       #Marix of testing labels
-        self.predicts = []  #Matrix of predicts
-        self.T = 0.001               #Tolerance(Accuracy) of System
-        self.C = 10.0                   #Penotal Coefficients
-        self.Step = 0.01             #Min step length of alpha1
+        self.TestingLabels = []  # Marix of testing labels
+        self.predicts = []  # Matrix of predicts
+        self.T = 0.001  # Tolerance(Accuracy) of System
+        self.C = 10.0  # Penotal Coefficients
+        self.Step = 0.01  # Min step length of alpha1
         self.Max_iter = 3000  # Max loop time
-        self.Models_Dict = []           #Dictonary to Store Models
-        self.KernalType = 'g'          # predefine the Kernal Type is linear Kernal
-        self.KernalCatch_Dict = {}           #Kernal Catch Values Dictionary
-        self.KernalCatch_Matrix = np.zeros((1,1)) # Kernal Catch Values Matrix
-        self.GaussinSigma = 8.0           # Define a default value of Delta for Gaussin Kernal
-        self.PolinomailR = 1.0            # Default value of Polinomail Kernal R
-        self.Polinomaild = 2.0            # Default value of Polinomail Kernal d
-        self.alpha1Idx = 0                 #Index of Alpha 1
-        self.alpha2Idx = 0                 #Index of Alpha 2
-        self.PredictResult = []            #List to save predictions
+        self.Models_Dict = []  # Dictonary to Store Models
+        self.KernalType = 'g'  # predefine the Kernal Type is linear Kernal
+        self.KernalCatch_Dict = {}  # Kernal Catch Values Dictionary
+        self.KernalCatch_Matrix = np.zeros((1, 1))  # Kernal Catch Values Matrix
+        self.GaussinSigma = 8.0  # Define a default value of Delta for Gaussin Kernal
+        self.PolinomailR = 1.0  # Default value of Polinomail Kernal R
+        self.Polinomaild = 2.0  # Default value of Polinomail Kernal d
+        self.alpha1Idx = 0  # Index of Alpha 1
+        self.alpha2Idx = 0  # Index of Alpha 2
+        self.PredictResult = []  # List to save predictions
         self.ModelLearningCurve = []  # list to catch Eidx of Training Set for each model
         self.Eidx_Training_list = []  # A list to catch Eidx values of Train samples
         self.Lidx_Training_list = []
@@ -45,16 +46,16 @@ class SVMClassifier:
         self.Eidx_CV = 0.0
         self.Lidx_CV = 0
 
-    def LoadData(self, model, Training_source=None, Testing_source=None, CrossValidation_source=None):
+    def LoadData(self, model=None, Training_source=None, Testing_source=None, CrossValidation_source=None):
         '''Load Samples Data into Numpy Matrix
            Initial Parameters
         '''
-        if Training_source is None:
-            Training_source = 'TrainingSamples2.csv'
         if Testing_source is None:
             Testing_source = 'TestingSamples.csv'
         if CrossValidation_source is None:
             CrossValidation_source = 'CVSamples.csv'
+        if model is None:
+            model = 'Tr'
 
         # Reset all sample catches to 0
         self.TrainingSamples = []  # Matrix of Training Sample
@@ -71,20 +72,20 @@ class SVMClassifier:
             xVariable = []
             line = line[:-1]  # Remove the /r/n
             vlist1 = line.split("/r")
-            if vlist1[0]== "": continue #Omit empty line
+            if vlist1[0] == "": continue  # Omit empty line
             vlist = vlist1[0].split(",")
-            #Get xVariables from Training Set
+            # Get xVariables from Training Set
             for item in vlist[:-1]:
                 xVariable.append(float(item))
             self.TrainingSamples.append(xVariable)
 
             # Get Lables from Training Set
-            if float(vlist[-1])==0:
+            if float(vlist[-1]) == 0:
                 label = -1
             else:
                 label = float(vlist[-1])
             self.TrainingLabels.append(label)
-        print "Loaded %s Training Samples" %len(self.TrainingSamples)
+        print "Loaded %s Training Samples" % len(self.TrainingSamples)
         fn.close()
 
         if model == 'Testing':
@@ -93,7 +94,7 @@ class SVMClassifier:
                 xVariable = []
                 line = line[:-1]  # Remove the /r/n
                 vlist1 = line.split("/r")
-                if vlist1[0]== "": continue
+                if vlist1[0] == "": continue
                 vlist = vlist1[0].split(",")
                 # Get xVariables from Testing Set
                 for item in vlist[:-1]:
@@ -137,7 +138,8 @@ class SVMClassifier:
         '''Find Alpha1 by checking the violation of KKT conditions'''
         pass
 
-    def _Update_Variables(self, idx1=None, alpha1=None, idx2=None, alpha2=None, alpha_ini = False, alpha_val=None, b=None, T=None,
+    def _Update_Variables(self, idx1=None, alpha1=None, idx2=None, alpha2=None, alpha_ini=False, alpha_val=None, b=None,
+                          T=None,
                           C=None, Step=None, Max_iter=None, Sigma=None, Kernal_ini=False, KernalType=None,
                           PolinomialR=None, Polinomiald=None):
         '''Update Variables
@@ -150,42 +152,41 @@ class SVMClassifier:
             Max_iter
         '''
         if idx1 != None and alpha1 != None:
-            self.alphas[idx1] = alpha1*1.0
+            self.alphas[idx1] = alpha1 * 1.0
         if idx2 != None and alpha2 != None:
-            self.alphas[idx2] = alpha2*1.0
+            self.alphas[idx2] = alpha2 * 1.0
         if b != None:
-            self.b = b*1.0
+            self.b = b * 1.0
         if T != None:
-            self.T = T*1.0
+            self.T = T * 1.0
         if C != None:
-            self.C = C*1.0
+            self.C = C * 1.0
         if Step != None:
-            self.Step = Step*1.0
+            self.Step = Step * 1.0
         if Max_iter != None:
             self.Max_iter = Max_iter
 
         if Sigma != None:
-            self.GaussinSigma = Sigma*1.0
+            self.GaussinSigma = Sigma * 1.0
         else:
-            Sigma = self.GaussinSigma*1.0
+            Sigma = self.GaussinSigma * 1.0
 
         if PolinomialR != None:
-            self.PolinomailR = PolinomialR*1.0
+            self.PolinomailR = PolinomialR * 1.0
         else:
-            PolinomialR = self.PolinomailR*1.0
+            PolinomialR = self.PolinomailR * 1.0
 
         if Polinomiald != None:
-            self.Polinomaild = Polinomiald*1.0
+            self.Polinomaild = Polinomiald * 1.0
         else:
-            Polinomiald = self.Polinomaild*1.0
+            Polinomiald = self.Polinomaild * 1.0
 
         if KernalType != None:
             self.KernalType = KernalType
         else:
             KernalType = self.KernalType
 
-
-        #Initalize self.Kernal_Catch
+        # Initalize self.Kernal_Catch
         if Kernal_ini:
             print "System is initializing Kernal Catch:"
             stars = 0
@@ -204,7 +205,7 @@ class SVMClassifier:
                     # Initialize the Kernal values into Numpy Matrix
                     x1 = self.TrainingSamples[idx1]
                     x2 = self.TrainingSamples[idx2]
-                    #if self.KernalCatch_Dict.has_key(key1):
+                    # if self.KernalCatch_Dict.has_key(key1):
                     #    continue
                     if KernalType == 'l':
                         KernalVal = self._Cal_Linear_Kernal(x1, x2)
@@ -221,17 +222,17 @@ class SVMClassifier:
             SampleCount = len(self.TrainingLabels)
             if alpha_val is None:
                 alpha_val = float(0.1)
-                self.alphas = [alpha_val]*SampleCount
+                self.alphas = [alpha_val] * SampleCount
             else:
-                #i = 0
-                if len(self.alphas) == 0 :
+                # i = 0
+                if len(self.alphas) == 0:
                     # This situation match two status:
                     # 1. Initiate self.alphas with a alpha value Ex(0.1)
                     # 2. Load Alphas from Model File
                     if isinstance(alpha_val, list):
                         self.alphas = alpha_val
                     else:
-                        self.alphas = [alpha_val]*SampleCount
+                        self.alphas = [alpha_val] * SampleCount
                 else:
                     # There is also two situtions:
                     # 1. alpha_val is a float, then this is alpha initializtion
@@ -245,7 +246,7 @@ class SVMClassifier:
                     else:
                         self.alphas = [alpha_val] * SampleCount
 
-    def _Find_Alpha2(self, idx1, E1, KernalType = None):
+    def _Find_Alpha2(self, idx1, E1, KernalType=None):
         '''Find Alpha2 when Alpha1 is decided
         Step1: Find Alpha2 by Max|E1-E2|
         Step2: If (Alpha2New-Alpha2old)<Step, then find Alpha2 from boundary samples
@@ -255,10 +256,10 @@ class SVMClassifier:
             KernalType = self.KernalType
         found, alpha2, eta = self._Find_Alpha2_Nonbound(idx1, E1, KernalType)
         if found == False:
-            found,alpha2,eta = self._Find_Alpha2_MaxE(idx1, E1, KernalType)
+            found, alpha2, eta = self._Find_Alpha2_MaxE(idx1, E1, KernalType)
         return found, alpha2, eta
 
-    def _Find_Alpha2_MaxE(self, idx1, E1, KernalType = None):
+    def _Find_Alpha2_MaxE(self, idx1, E1, KernalType=None):
         '''Find Alpha2 when Alpha1 is decided
         Step1: Find Alpha2 by Max|E1-E2|
         Step2: If (Alpha2New-Alpha2old)<Step, then find Alpha2 from boundary samples
@@ -273,7 +274,7 @@ class SVMClassifier:
         gap = 0
         eta = 0
         found = False
-        #print "   Find alpha 2 from all"
+        # print "   Find alpha 2 from all"
         for idx2 in range(len(self.alphas)):
             if alpha1 == idx2: continue
             # eta is the distance of two Alphas, it must be > 0. If eta < 0, then the eta must be wrong
@@ -282,13 +283,13 @@ class SVMClassifier:
                 print "   eta %s should not be less than 0." % eta_tmp
                 continue
             E2 = self._Cal_Ei(idx2, KernalType)
-            tmp = math.fabs(E1-E2)
+            tmp = math.fabs(E1 - E2)
             if tmp > gap:
                 gap = tmp
                 alpha2 = idx2
                 eta = eta_tmp
                 found = True
-        #if found:print "   @@@-2 For Alpha1 at %s the best All Alpha2 is %s"%(idx1, alpha2)
+        # if found:print "   @@@-2 For Alpha1 at %s the best All Alpha2 is %s"%(idx1, alpha2)
         return found, alpha2, eta
 
     def _Find_Alpha2_Nonbound(self, idx1, E1, KernalType=None):
@@ -302,7 +303,7 @@ class SVMClassifier:
         gap = 0
         eta = 0
         found = False
-        #print "   Find alpha 2 from non-boundary"
+        # print "   Find alpha 2 from non-boundary"
         for idx2 in range(len(self.alphas)):
             # Two alpha should not be same
             if alpha1 == idx2: continue
@@ -314,13 +315,13 @@ class SVMClassifier:
                     print "   eta %s should not be less than 0." % eta_tmp
                     continue
                 E2 = self._Cal_Ei(idx2, KernalType)
-                tmp = math.fabs(E1-E2)
+                tmp = math.fabs(E1 - E2)
                 if tmp > gap:
                     gap = tmp
                     alpha2 = idx2
                     eta = eta_tmp
                     found = True
-        #if found:print "   @@@-2 For Alpha1 at %s the best Non-Boundary Alpha2 is %s"%(idx1, alpha2)
+        # if found:print "   @@@-2 For Alpha1 at %s the best Non-Boundary Alpha2 is %s"%(idx1, alpha2)
         return found, alpha2, eta
 
     def _Cal_F(self, x2, KernalType=None, Mode=None):
@@ -333,12 +334,12 @@ class SVMClassifier:
             KernalType = self.KernalType
 
         if Mode is None:
-            Mode = 'Tr' # Training Mode
+            Mode = 'Tr'  # Training Mode
 
         val = []
         # Calculate Kernal, return value is a ndarray
         if Mode == 'Tr':
-            #for x1 in range(len(self.TrainingSamples)):
+            # for x1 in range(len(self.TrainingSamples)):
             #    val.append(self._Fetch_Kernal(x1, x2))
             Kernal_Val = self._Fetch_Kernal(x2)
         elif Mode == 'Te':
@@ -349,30 +350,29 @@ class SVMClassifier:
             print "Wrong Mode in Prediction"
             return
 
-
-        #Kernal_Val = np.array(val)
-        #Vectorize label y and alpha into ndarry for the next step of calculation
+        # Kernal_Val = np.array(val)
+        # Vectorize label y and alpha into ndarry for the next step of calculation
         y = np.array(self.TrainingLabels)
         alpha = np.array(self.alphas)
-        #print "K, Y, A, %s %s"%( len(y), len(alpha))
+        # print "K, Y, A, %s %s"%( len(y), len(alpha))
 
-        prediction_value = sum(alpha*y*Kernal_Val) + self.b
-        #print prediction_value
-        #print "Prediction Lable of data sample %s is %s"%(x2, prediction_value)
+        prediction_value = sum(alpha * y * Kernal_Val) + self.b
+        # print prediction_value
+        # print "Prediction Lable of data sample %s is %s"%(x2, prediction_value)
         return round(prediction_value, 5)
 
-    def _Fetch_Kernal(self,  idx1, idx2=None):
+    def _Fetch_Kernal(self, idx1, idx2=None):
         '''Fetch Kernal value from calculated Kernal Catch
            idx1 and idx2 are the indexs
         '''
-        #key = str(idx1)+'-'+str(idx2)
-        #return  self.KernalCatch_Dict[key]
+        # key = str(idx1)+'-'+str(idx2)
+        # return  self.KernalCatch_Dict[key]
         if idx2 is None:
-            return self.KernalCatch_Matrix[idx1,:]
+            return self.KernalCatch_Matrix[idx1, :]
         else:
-            return self.KernalCatch_Matrix[idx1,idx2]
+            return self.KernalCatch_Matrix[idx1, idx2]
 
-    def _Cal_Kernal(self,  x1, x2, mode=None,sigma=None, R=None, d=None):
+    def _Cal_Kernal(self, x1, x2, mode=None, sigma=None, R=None, d=None):
         '''Kernal function to calculate Kernals
             Linear Kernal
             Gaussin Kernal RBF
@@ -382,7 +382,7 @@ class SVMClassifier:
             x1 and x2 should be type of python list, not vector.
         '''
         if mode is None:
-            mode=self.KernalType
+            mode = self.KernalType
         if sigma is None:
             sigma = self.GaussinSigma
         if R is None:
@@ -391,11 +391,11 @@ class SVMClassifier:
             d = self.Polinomaild
 
         if mode == 'l':
-            return self._Cal_Linear_Kernal(x1,x2)
+            return self._Cal_Linear_Kernal(x1, x2)
         elif mode == 'g':
-            return self._Cal_Gaussin_Kernal(x1,x2,sigma)
+            return self._Cal_Gaussin_Kernal(x1, x2, sigma)
         elif mode == 'p':
-            return self._Cal_Polinomial_Kernal(x1,x2,R,d)
+            return self._Cal_Polinomial_Kernal(x1, x2, R, d)
         else:
             print "No such kernal type, kernal must be in l/g/p"
 
@@ -404,33 +404,32 @@ class SVMClassifier:
             Vector Solution: x1 and x2 are the sample vectors
         '''
         val = np.dot(x1, x2)
-        #print "Linear Kernal Value is %s"%val
-        return round(val,5)
+        # print "Linear Kernal Value is %s"%val
+        return round(val, 5)
 
-    def _Cal_Gaussin_Kernal(self,x1,x2,sigma):
+    def _Cal_Gaussin_Kernal(self, x1, x2, sigma):
         '''Calculation of Gaussion Kernal
             Vector Solution: x1 and x2 are the sample vectors
             Sigma is squared diviation with default value 8
         '''
-        #Convert x1 and x2 into Numpy ndarray
+        # Convert x1 and x2 into Numpy ndarray
         x1 = np.array(x1)
         x2 = np.array(x2)
-        val = math.exp((-1)*(np.sum(np.square(x1-x2))/(2*sigma*sigma)))
-        #val = math.exp((-1)*(math.pow(np.linalg.norm((x1-x2)),2)/(2*sigma*sigma)))
-        #print val
-        return round(val,5)
+        val = math.exp((-1) * (np.sum(np.square(x1 - x2)) / (2 * sigma * sigma)))
+        # val = math.exp((-1)*(math.pow(np.linalg.norm((x1-x2)),2)/(2*sigma*sigma)))
+        # print val
+        return round(val, 5)
 
-    def _Cal_Polinomial_Kernal(self,x1,x2,R,d):
+    def _Cal_Polinomial_Kernal(self, x1, x2, R, d):
         '''Calculation of Polinomial Kernal
         Vector Solution: x1 and x2 are the sample vectors
         R is the constant with default value 1
         d is the power degree with default value 2
         '''
-        val = math.pow((self._Cal_Linear_Kernal(x1,x2)+R),d)
-        return round(val,5)
+        val = math.pow((self._Cal_Linear_Kernal(x1, x2) + R), d)
+        return round(val, 5)
 
-
-    def _Cal_Ei(self,idx, KernalType=None):
+    def _Cal_Ei(self, idx, KernalType=None):
         '''Function to calculate difference between label and prediction
         E_idx=f(x_idx)-y_idx
         idx is the index of sample vector waiting for be predicted
@@ -447,9 +446,7 @@ class SVMClassifier:
 
         # Update Error catch of this training
         self.Eidx_Training_list[idx] = abs(Eidx)
-        return round(Eidx,5)
-
-
+        return round(Eidx, 5)
 
     def _Cal_Alpha1(self, idx1, idx2, new_alpha2):
         '''Function to renew Alpha1
@@ -461,9 +458,9 @@ class SVMClassifier:
         old_alpha1 = self.alphas[idx1]
         old_alpha2 = self.alphas[idx2]
 
-        new_alpha1 = old_alpha1 + y1*y2*(old_alpha2-new_alpha2)
-        #print "New Alpha1 %s value is %s"%(idx1, new_alpha1)
-        return round(new_alpha1,5)
+        new_alpha1 = old_alpha1 + y1 * y2 * (old_alpha2 - new_alpha2)
+        # print "New Alpha1 %s value is %s"%(idx1, new_alpha1)
+        return round(new_alpha1, 5)
 
     def _Cal_Alpha2(self, idx1, idx2, E1, eta, C=None, Step=None, KernalType=None):
         '''Function to renew Alpha2
@@ -491,33 +488,36 @@ class SVMClassifier:
         H = 0.0
         valid = True
 
-        #Calculate new alpha2
-        E2 = self._Cal_Ei(idx2,KernalType)
-        #print "   E1-E2=%s,  eta = %s, y2*(E1-E2)=%s, y2*(E1-E2)/eta=%s"%((E1-E2), eta, (y2*(E1-E2)),(y2*(E1-E2)/eta))
+        # Calculate new alpha2
+        E2 = self._Cal_Ei(idx2, KernalType)
+        # print "   E1-E2=%s,  eta = %s, y2*(E1-E2)=%s, y2*(E1-E2)/eta=%s"%((E1-E2), eta, (y2*(E1-E2)),(y2*(E1-E2)/eta))
         new_alpha2 = old_alpha2 + y2 * (E1 - E2) / eta
 
         # Set boundary for new_alpha2_value value
         if y1 == y2:
-            L = max(0.0, (old_alpha2+old_alpha1-C))
-            H = min(C, (old_alpha2+old_alpha1))
+            L = max(0.0, (old_alpha2 + old_alpha1 - C))
+            H = min(C, (old_alpha2 + old_alpha1))
         else:
-            L = max(0.0, (old_alpha2-old_alpha1))
-            H = min(C, (C+old_alpha1+old_alpha2))
+            L = max(0.0, (old_alpha2 - old_alpha1))
+            H = min(C, (C + old_alpha1 + old_alpha2))
         if L == H:
             valid = False
             return valid, old_alpha2
         # Clip new_alpha2_value value
-        if new_alpha2 > H: clipped_new_alpha2 = H
-        elif new_alpha2 < L: clipped_new_alpha2 = L
-        else: clipped_new_alpha2 = new_alpha2
+        if new_alpha2 > H:
+            clipped_new_alpha2 = H
+        elif new_alpha2 < L:
+            clipped_new_alpha2 = L
+        else:
+            clipped_new_alpha2 = new_alpha2
 
-        #print "   For Alpha2 at index %s, old value is %s, new value is %s, clipped value is %s, L is %s, H is %s"%(idx2, old_alpha2, new_alpha2, clipped_new_alpha2, L, H)
+        # print "   For Alpha2 at index %s, old value is %s, new value is %s, clipped value is %s, L is %s, H is %s"%(idx2, old_alpha2, new_alpha2, clipped_new_alpha2, L, H)
         # Vrifile whether the clipped_new_alpha2 moved big enough > step
         if abs(clipped_new_alpha2 - old_alpha2) < Step:
-            #---print "   Old_Alpha2:Value %s:%s - clipped_New_Alpha2:%s = Diff %s cannot provide enough change to old Alpha2"%(idx2, old_alpha2, clipped_new_alpha2, abs(clipped_new_alpha2 - old_alpha2))
+            # ---print "   Old_Alpha2:Value %s:%s - clipped_New_Alpha2:%s = Diff %s cannot provide enough change to old Alpha2"%(idx2, old_alpha2, clipped_new_alpha2, abs(clipped_new_alpha2 - old_alpha2))
             valid = False
 
-        return valid, round(clipped_new_alpha2,5)
+        return valid, round(clipped_new_alpha2, 5)
 
     def _Cal_eta(self, idx1, idx2, KernalType=None):
         '''Function to calcate eta
@@ -534,11 +534,11 @@ class SVMClassifier:
         K11 = self._Fetch_Kernal(idx1, idx1)
         K22 = self._Fetch_Kernal(idx2, idx2)
         K12 = self._Fetch_Kernal(idx1, idx2)
-        eta = K11+K22-2*K12
-        #print "eta value for x1 %s and x2 %s is %s"%(idx1, idx2, eta)
-        return round(eta,5)
+        eta = K11 + K22 - 2 * K12
+        # print "eta value for x1 %s and x2 %s is %s"%(idx1, idx2, eta)
+        return round(eta, 5)
 
-    def _Cal_b(self, idx1, idx2, new_alpha1, new_alpha2, KernalType = None, C=None):
+    def _Cal_b(self, idx1, idx2, new_alpha1, new_alpha2, KernalType=None, C=None):
         '''Function to calculate b value when Alpha1 and Alpha2 are renewed'''
         if KernalType is None:
             KernalType = self.KernalType
@@ -560,11 +560,14 @@ class SVMClassifier:
         # Calculate b
         new_b1 = (old_alpha1 - new_alpha1) * y1 * K11 + (old_alpha2 - new_alpha2) * y2 * K21 - E1 + old_b
         new_b2 = (old_alpha1 - new_alpha1) * y1 * K12 + (old_alpha2 - new_alpha2) * y2 * K22 - E2 + old_b
-        if new_alpha1 > 0 and new_alpha1 < C: new_b = new_alpha1
-        elif new_alpha2 > 0 and new_alpha2 < C: new_b = new_alpha2
-        else:   new_b = (new_b1 + new_b2)/2
-        #print "   new b is %s"%new_b
-        return round(new_b,5)
+        if new_alpha1 > 0 and new_alpha1 < C:
+            new_b = new_alpha1
+        elif new_alpha2 > 0 and new_alpha2 < C:
+            new_b = new_alpha2
+        else:
+            new_b = (new_b1 + new_b2) / 2
+        # print "   new b is %s"%new_b
+        return round(new_b, 5)
 
     def _Cal_Sum_Errors(self, source=None, Diff_mode=None, KernalType=None, Model=None):
         '''
@@ -652,18 +655,18 @@ class SVMClassifier:
         passes = 0
         stars = 0
         while passes < Loop:
-            updated_alpha = 0 # Alpha be changed in each loop
+            updated_alpha = 0  # Alpha be changed in each loop
             iter += 1
             # Formatting the output
-            print "Iteration %s is start"%iter
+            print "Iteration %s is start" % iter
             print"--------------------------------------------------------------------"
 
             # find alpha1_idx's index by checking the violation of KKT condition
             for alpha1_idx in range(len(self.alphas)):
                 y1 = self.TrainingLabels[alpha1_idx]
                 E1 = self._Cal_Ei(alpha1_idx, KernalType)
-                #print "E1 value is %s"%E1
-                #---print "@@@-1 For Alpha1 at %s with value %s, label y1 is %s, E1 is %s, C is %s, T is %s, alpha1 value is %s, y1*E1 = %s"%(alpha1_idx, old_alpha1, y1, E1, C, T, old_alpha1, y1*E1)
+                # print "E1 value is %s"%E1
+                # ---print "@@@-1 For Alpha1 at %s with value %s, label y1 is %s, E1 is %s, C is %s, T is %s, alpha1 value is %s, y1*E1 = %s"%(alpha1_idx, old_alpha1, y1, E1, C, T, old_alpha1, y1*E1)
                 # Formatting output
                 stars += 1
                 if stars < 78:
@@ -673,20 +676,20 @@ class SVMClassifier:
                     stars = 0
 
                 # KKT condition vilation checking
-                if (old_alpha1 < C and (y1*E1)< -T) or (old_alpha1 > 0 and (y1*E1) > T):
+                if (old_alpha1 < C and (y1 * E1) < -T) or (old_alpha1 > 0 and (y1 * E1) > T):
                     done = False
-                    #Find the most proper alpha2_idx's index
+                    # Find the most proper alpha2_idx's index
                     found, alpha2_idx, eta = self._Find_Alpha2(alpha1_idx, E1, KernalType)
-                    #print "   Found Alpha2 is %s and Alpha2 is %s"%(found, alpha2_idx)
+                    # print "   Found Alpha2 is %s and Alpha2 is %s"%(found, alpha2_idx)
                     if found == False:
                         # Cannot find proper Alpha2 for Alpha1, change to an new alpha1_idx
-                        #print "   Cannot find proper Alpha2 for Alpha1 %s, change to an new Alpha1" % alpha1_idx
+                        # print "   Cannot find proper Alpha2 for Alpha1 %s, change to an new Alpha1" % alpha1_idx
                         continue
 
                     # Calculate new alpha2_idx
                     valid, clipped_new_alpha2 = self._Cal_Alpha2(alpha1_idx, alpha2_idx, E1, eta, C, Step, KernalType)
                     if valid == False:
-                        #print "There is no valid value for alpha2 at index %s"%alpha2_idx
+                        # print "There is no valid value for alpha2 at index %s"%alpha2_idx
                         continue
                     else:
                         updated_alpha += 1
@@ -695,30 +698,30 @@ class SVMClassifier:
                     new_alpha1 = self._Cal_Alpha1(alpha1_idx, alpha2_idx, clipped_new_alpha2)
 
                     # Calculate b when new alpha1 and alpha2 be calculated out
-                    new_b= self._Cal_b(alpha1_idx,alpha2_idx, new_alpha1, clipped_new_alpha2, KernalType, C)
+                    new_b = self._Cal_b(alpha1_idx, alpha2_idx, new_alpha1, clipped_new_alpha2, KernalType, C)
 
                     # update variables
                     self._Update_Variables(idx1=alpha1_idx, alpha1=new_alpha1,
-                                           idx2=alpha2_idx, alpha2= clipped_new_alpha2,
-                                           b = new_b)
+                                           idx2=alpha2_idx, alpha2=clipped_new_alpha2,
+                                           b=new_b)
                     # ---print "@@@-3  Max_iter:%s, Alpha1:idx1 = %s:%s; Alpha2:idx2 = %s:%s; Updated to:  Alpha1_New:%s and Alpha2_New:%s and b_new:%s"%(iter,alpha1_idx, old_alpha1, alpha2_idx, old_alpha2, new_alpha1, clipped_new_alpha2,new_b)
                 else:
-                    #---print "@@@-3 Alpha1:%s does not violate KKT conditions"%old_alpha1
+                    # ---print "@@@-3 Alpha1:%s does not violate KKT conditions"%old_alpha1
                     pass
             # Count the undated Alpha for each iteration
             print ''
             if iter > Max_iter: break
             if updated_alpha == 0:
-                passes +=1
+                passes += 1
                 j = 0
                 for alpha in self.alphas:
                     if alpha != 0.1:
                         j += 1
-                print "In iteration %s, no more alphas be updated, in total %s alphas be updated" %(iter, j)
-                #print "Passes = %s"%passes
+                print "In iteration %s, no more alphas be updated, in total %s alphas be updated" % (iter, j)
+                # print "Passes = %s"%passes
             else:
                 passes = 0
-            print "In Iteraton %s, %s alphas has been updated" %(iter, updated_alpha)
+            print "In Iteraton %s, %s alphas has been updated" % (iter, updated_alpha)
             print self.alphas
             print "____________________________________________________"
             print ""
@@ -733,28 +736,28 @@ class SVMClassifier:
         if destination is None:
             destination = 'SVMModel.csv'
         fn = open(destination, "w")
-        #fn.write('C value is:'+str( self.C)+'\n')
+        # fn.write('C value is:'+str( self.C)+'\n')
         fn.write(str(self.C) + '\n')
-        #fn.write('Gaussin Sigma value is:'+str(self.GaussinSigma)+'\n')
+        # fn.write('Gaussin Sigma value is:'+str(self.GaussinSigma)+'\n')
         fn.write(str(self.GaussinSigma) + '\n')
-        #fn.write('Alpha values are: \n')
+        # fn.write('Alpha values are: \n')
         for item in self.alphas:
-            fn.write(str(item)+'\n')
+            fn.write(str(item) + '\n')
 
-        print 'Model has been writen to %s'%destination
+        print 'Model has been writen to %s' % destination
         fn.close()
 
     def Load_Model(self, Model_File=None):
         '''Load Model Parameters from SVMModel.CSV'''
         if Model_File is None:
-            Model_File='SVMModel.csv'
-        fn= open(Model_File, 'r')
+            Model_File = 'SVMModel.csv'
+        fn = open(Model_File, 'r')
         C = float(fn.readline())
-        GaussinSigma=float(fn.readline())
+        GaussinSigma = float(fn.readline())
         alpha_val = []
         for line in fn:
             alpha_val.append(float(line))
-        self._Update_Variables(C=C, Sigma=GaussinSigma,alpha_val=alpha_val, alpha_ini=True)
+        self._Update_Variables(C=C, Sigma=GaussinSigma, alpha_val=alpha_val, alpha_ini=True)
 
     def Cross_Validate_Model(self, KernalType=None, Output=None, From=None, Result=None):
         '''Function to validate models with CV sample set
@@ -799,10 +802,10 @@ class SVMClassifier:
 
         self.PredictResult = predict_label
         Result = self.PredictResult
-        Precision, Recall, Accuracy, TP, FP, TN, FN = self.Performance_Diag(From, Result, Model='C')
+        Precision, Recall, Accuracy = self.Performance_Diag(From, Result, Model='C')
         self.Write_Test(predict_label, Precision, Recall, destination=Output, Model='C')
 
-    def Test_Model(self, KernalType = None, Output=None, From=None, Result=None):
+    def Test_Model(self, KernalType=None, Output=None, From=None, Result=None):
         '''Function to Test models with test sample set
             Output: The output desination file
             From: The source type of prediction performance analysis
@@ -836,7 +839,7 @@ class SVMClassifier:
         print ''
         print "Model Prediction is completed"
         self.PredictResult = predict_label
-        Precision, Recall, Accuracy, TP, FP, TN, FN = self.Performance_Diag(From, Result, Model='T')
+        Precision, Recall, Accuracy = self.Performance_Diag(From, Result, Model='T')
         self.Write_Test(predict_label, Precision, Recall, destination=Output, Model='T')
 
     def Write_Test(self, predict_label, Precision=0.0, Recall=0.0, destination=None, Model='T'):
@@ -851,14 +854,49 @@ class SVMClassifier:
         fn.write("Prediciton_Label,Test_Label\n")
         for i in range(len(predict_label)):
             fn.write(str(predict_label[i]) + ',' + str(y_labels[i]) + "\n")
-        fn.write("Precision,%s \n"%Precision)
-        fn.write("Recall,%s \n"%Recall)
-        print 'Test Result has been writen to %s'%destination
+        fn.write("Precision,%s \n" % Precision)
+        fn.write("Recall,%s \n" % Recall)
+        print 'Test Result has been writen to %s' % destination
         fn.close()
 
-    def Predict(self):
-        '''Function to use model to predict values'''
-        pass
+    def Predict(self, xValueDir, yOutputDir, KernalType=None):
+        '''
+        This function is to read a xValues in a CSV file and return a predicted y value
+        :param xValueDir: The directory of xValues file
+        :param KernalType:
+        :param Mode: Te
+        :return:
+        '''
+        if KernalType is None:
+            KernalType = self.KernalType
+
+        xVariable = []
+
+        fn = open(xValueDir, "r")
+        for line in fn:
+            tmp = []
+            line = line[:-1]  # Remove the /r/n
+            vlist1 = line.split("/r")
+            if vlist1[0] == "": continue  # Omit empty line
+            vlist = vlist1[0].split(",")
+            # Get xVariables from Training Set
+            for item in vlist:
+                tmp.append(float(item))
+            xVariable.append(tmp)
+        fn.close()
+
+        fn = open(yOutputDir, "a")
+        time_stamp = datetime.datetime.now()
+        date_stamp = time_stamp.date()
+        for item in xVariable:
+            pre = self._Cal_F(item, KernalType, Mode='Te')
+            if pre > 0:
+                val = 1
+            else:
+                val = -1
+            line = str(date_stamp) + ',' + str(val) + '\n'
+            fn.write(line)
+        fn.close()
 
     def Performance_Diag(self, From=None, Result=None, Model=None):
         '''Function to evaluate performance of models
@@ -869,10 +907,10 @@ class SVMClassifier:
         * Precision = True_Positive/(True_Pos + False_Pos)
         * Recall = True_Pos/(True_Pos _ False_Neg)
         '''
-        TP=0.0
-        FP=0.0
-        FN=0.0
-        TN=0.0
+        TP = 0.0
+        FP = 0.0
+        FN = 0.0
+        TN = 0.0
 
         if Model is None:
             Model = 'T'
@@ -885,7 +923,7 @@ class SVMClassifier:
             return
 
         if From is None:
-            From = 'l' #Predict results from list
+            From = 'l'  # Predict results from list
 
         if From is 'l':
             if Result is None:
@@ -904,7 +942,7 @@ class SVMClassifier:
         elif From is 'f':
             if Result is None:
                 Result = 'SVMTest.csv'
-            fn=open(Result,'r')
+            fn = open(Result, 'r')
             i = 0
             fn.readline()
             for line in fn:
@@ -912,18 +950,18 @@ class SVMClassifier:
                 vlist1 = line.split("/r")
                 if vlist1[0] == "": continue
                 vlist = vlist1[0].split(",")
-                if vlist[0] == 'Precision' or vlist[0] == 'Recall':continue
-                if float(vlist[0])==1.0:
-                    if self.TestingLabels[i]==1:
+                if vlist[0] == 'Precision' or vlist[0] == 'Recall': continue
+                if float(vlist[0]) == 1.0:
+                    if self.TestingLabels[i] == 1:
                         TP += 1
                     else:
                         FP += 1
                 else:
-                    if self.TestingLabels[i]==-1:
+                    if self.TestingLabels[i] == -1:
                         TN += 1
                     else:
                         FN += 1
-                i+=1
+                i += 1
         else:
             print "No such option"
 
@@ -937,8 +975,8 @@ class SVMClassifier:
             Recall = round(TP / (TP + FN), 2)
         Overall_Accuracy = round((TP + TN) / (TP + FP + TN + FN), 2)
         print "TP=%s, FP=%s, TN=%s, FN=%s, Precision Rate is %s and Recall Rate is %s, Overall Accurate is %s" % (
-        TP, FP, TN, FN, Precision, Recall, Overall_Accuracy)
-        return Precision, Recall, Overall_Accuracy, TP, FP, TN, FN
+            TP, FP, TN, FN, Precision, Recall, Overall_Accuracy)
+        return Precision, Recall, Overall_Accuracy
 
     def Plot_Learning_Curve(self, model=None, base_parameter=None):
         '''
@@ -946,8 +984,6 @@ class SVMClassifier:
         :return:
         '''
         # The least parameter count
-        # plt.ion()
-        plt.figure(1)
         if model is None:
             model = 'Parameter'
             base_parameter = 5
@@ -957,7 +993,9 @@ class SVMClassifier:
         for i in range(len(self.ModelLearningCurve)):
             yTrain.append(self.ModelLearningCurve[i][0])
             yCV.append(self.ModelLearningCurve[i][1])
-
+        print x
+        print yTrain
+        print yCV
 
         plt.plot(x, yTrain, 'ob-', c='g', label=u'TrainingError')
         plt.plot(x, yCV, 'ob-', c='r', label=u'CVError')
@@ -967,266 +1005,42 @@ class SVMClassifier:
             plt.annotate(str(j), xy=(i, j))
         plt.xlabel(u'Number of Parameters')
         plt.ylabel((u'Sum of Errors'))
-        plt.savefig('figure.png')
-        # plt.show()
-        # time.sleep(2)
-        #plt.close(1)
+        plt.show()
 
     def pause(self):
         programPause = raw_input("Press any key to continue")
 
+
 def main():
-    import profile
-    import pstats
-
-    #profile.run("run()", "prof1.txt")
-    #p = pstats.Stats('prof1.txt')
-    #p.sort_stats('time').print_stats()
-    # singal_run()
-    #batch_test_parameters()
-    # batch_test_sample_sizes()
-    # batch_test_C_Sigma()
-    tr_para = [['output/600867_StockMultiC-Sigma-Results-HO_2.csv',
-                'input/600867_Train_HO.csv', 'input/600867_CV_HO.csv',
-                'model/600867_Model_HO.csv', 'output/600867_Test_HO.csv'],
-               ['output/600867_StockMultiC-Sigma-Results-LO_2.csv',
-                'input/600867_Train_LO.csv', 'input/600867_CV_LO.csv',
-                'model/600867_Model_LO.csv', 'output/600867_Test_LO.csv'],
-               ['output/600221_StockMultiC-Sigma-Results-HO_2.csv',
-                'input/600221_Train_HO.csv', 'input/600221_CV_HO.csv',
-                'model/600221_Model_HO.csv', 'output/600221_Test_HO.csv'],
-               ['output/600221_StockMultiC-Sigma-Results-LO_2.csv',
-                'input/600221_Train_LO.csv', 'input/600221_CV_LO.csv',
-                'model/600221_Model_LO.csv', 'output/600221_Test_LO.csv'],
-               ['output/002310_StockMultiC-Sigma-Results-HO_2.csv',
-                'input/002310_Train_HO.csv', 'input/002310_CV_HO.csv',
-                'model/002310_Model_HO.csv', 'output/002310_Test_HO.csv'],
-               ['output/002310_StockMultiC-Sigma-Results-LO_2.csv',
-                'input/002310_Train_LO.csv', 'input/002310_CV_LO.csv',
-                'model/002310_Model_LO.csv', 'output/002310_Test_LO.csv'],
-               ['output/300146_StockMultiC-Sigma-Results-HO_2.csv',
-                'input/300146_Train_HO.csv', 'input/300146_CV_HO.csv',
-                'model/300146_Model_HO.csv', 'output/300146_Test_HO.csv'],
-               ['output/300146_StockMultiC-Sigma-Results-LO_2.csv',
-                'input/300146_Train_LO.csv', 'input/300146_CV_LO.csv',
-                'model/300146_Model_LO.csv', 'output/300146_Test_LO.csv'],
-               ['output/600221_StockMultiC-Sigma-Results-HO_3Pow.csv',
-                'input/600221_Train_HO_3Pow.csv', 'input/600221_CV_HO_3Pow.csv',
-                'model/600221_Model_HO__3Pow.csv', 'output/600221_Test_HO_3Pow.csv'],
-               ['output/600221_StockMultiC-Sigma-Results-HO_More_2.csv',
-                'input/600221_Train_HO_More_2.csv', 'input/600221_CV_HO_More_2.csv',
-                'model/600221_Model_HO__More_2.csv', 'output/600221_Test_HO_More_2.csv'],
-               ]
-    for i in range(9, 10):
-        multi_batch_test_C_Sigma(tr_para[i])
+    predict()
 
 
-
-def singal_run():
+def predict():
+    pre_para = {'Training_source': ['PredictFiles/600867_Train_HO.csv', 'PredictFiles/600221_Train_HO.csv',
+                                    'PredictFiles/002310_Train_HO.csv', 'PredictFiles/300146_Train_HO.csv'],
+                'parameter': [[0.6, 1.5], [2.0, 2.0], [0.6, 1.5], [1.0, 1.5]],
+                'train_model': ['PredictFiles/600867_TrainingModel_HO.csv',
+                                'PredictFiles/600221_TrainingModel_HO.csv',
+                                'PredictFiles/002310_TrainingModel_HO.csv',
+                                'PredictFiles/300146_TrainingModel_HO.csv'],
+                'xValueDir': ['PredictFiles/stock_data_sh600867.csv', 'PredictFiles/stock_data_sh600221.csv',
+                              'PredictFiles/stock_data_sz002310.csv', 'PredictFiles/stock_data_sz300146.csv'],
+                'yOutputDir': ['output/Prediction/stock_pre_sh600867_LO.csv',
+                               'output/Prediction/stock_pre_sh600221_HO.csv',
+                               'output/Prediction/stock_pre_sz002310.csv',
+                               'output/Prediction/stock_pre_sz300146.csv']}
     model = SVMClassifier()
-    model.LoadData('CV', Training_source='TrainingLO.csv', CrossValidation_source='CVL.csv')
-    model._Update_Variables(C=1.0, Sigma=0.1, T=0.001, Step=0.01, KernalType='g', alpha_ini=True, alpha_val=0.1,
-                            Kernal_ini=True, Max_iter=300)
-    model.Train_Model(Loop=3, Model_File='StockTrainingModel2.csv')
-    model.Load_Model('StockTrainingModel2.csv')
-    model.Cross_Validate_Model(KernalType='g', Output='StockTest2.csv')
-    # model.Test_Model(KernalType='g', Output='StockTest2.csv')
-    Precesion, Recall, Accuracy, TP, FP, TN, FN = model.Performance_Diag(Model='C')
-    print(
-        'C: %s,  Sigma: %s, TP:%s, FP:%s, TN:%s, FN:%s, Precesion: %s, Recall: %s, Accuracy: %s, Eidx_Training: %s, Eidx_CV: %s \n' % (
-            1.0, 0.1, TP, FP, TN, FN, Precesion, Recall, Accuracy, model.Eidx_Training, model.Eidx_CV))
 
-
-def batch_test_C_Sigma():
-    model = SVMClassifier()
-    model.LoadData('CV', Training_source='TrainingLO.csv', CrossValidation_source='CVL.csv')
-    #C = [0.6, 0.7, 0.8, 1.0, 1.3, 1.5, 1.8, 2.0, 3.0, 4.0]
-    Sigma = [0.06, 0.08, 0.1, 0.3, 0.5, 0.8, 1.0, 1.5, 2.0]
-    C = [1.0]
-    #Sigma = [0.1]
-    fn = open('StockMultiModelResults.csv', "w+")
-    for each_C in C:
-        for each_Sigma in Sigma:
-            # tmp = []
-            model._Update_Variables(C=each_C, Sigma=each_Sigma, T=0.001, Step=0.01, KernalType='g', alpha_ini=True,
-                                    alpha_val=0.1,
-                                    Kernal_ini=True)
-            model.Train_Model(Loop=3, Model_File='StockTrainingModel2.csv')
-            model.Load_Model('StockTrainingModel2.csv')
-            model.Cross_Validate_Model(KernalType='g', Output='StockTest2.csv')
-            Precesion, Recall, Accuracy, TP, FP, TN, FN = model.Performance_Diag(Model='C')
-            model.ModelLearningCurve.append([model.Eidx_Training, model.Eidx_CV])
-            fn.writelines(
-                'C: %s,  Sigma: %s, TP:%s, FP:%s, TN:%s, FN:%s, Precesion: %s, Recall: %s, Accuracy: %s, Eidx_Training: %s, Eidx_CV: %s \n' % (
-                    each_C, each_Sigma, TP, FP, TN, FN, Precesion, Recall, Accuracy, model.Eidx_Training,
-                    model.Eidx_CV))
-    fn.close()
-    model.Plot_Learning_Curve()
-
-
-def multi_batch_test_C_Sigma(tr_para):
-    model = SVMClassifier()
-    # model.LoadData('CV', Training_source='TrainingHO.csv', CrossValidation_source='CVH.csv')
-    C = [0.6, 0.7, 0.8, 1.0, 1.3, 1.5, 1.8, 2.0, 3.0, 4.0]
-    Sigma = [0.04, 0.05, 0.06, 0.08, 0.1, 0.3, 0.5, 0.8, 1.0, 1.5, 2.0]
-    # Sigma = [0.04, 0.05, 0.06, 0.1]
-    #Sigma = [0.06, 0.08]
-    # C = [1.0]
-    #Sigma = [0.1]
-    processors = 12
-    processes = []
-    output_que = mp.Queue()
-    # fn = open('output/600867_StockMultiC-Sigma-Results-HO_2.csv', "w+")
-    fn = open(tr_para[0], "w+")
-    # fn = open('StockMultiModelResults.csv', "w+")
-    for each_C in C:
-        for each_Sigma in Sigma:
-            p = mp.Process(target=task, args=(tr_para, each_C, each_Sigma, fn, output_que))
-            processes.append(p)
-
-    processes_pool(tasks=processes, processors=processors)
-
-    for i in range(output_que.qsize()):
-        content = output_que.get()
-        model.ModelLearningCurve.append([content[0], content[1]])
-        fn.writelines(content[2])
-
-    fn.close()
-    model.Plot_Learning_Curve()
-
-
-def task(tr_para, each_C, each_Sigma, fn, output_que):
-    TaskModel = SVMClassifier()
-    # TaskModel.LoadData('CV', Training_source='input/600867_Train_HO.csv',
-    #                   CrossValidation_source='input/600867_CV_HO.csv')
-    TaskModel.LoadData('CV', tr_para[1], CrossValidation_source=tr_para[2])
-    TaskModel._Update_Variables(C=each_C, Sigma=each_Sigma, T=0.001, Step=0.01, KernalType='g', alpha_ini=True,
-                                alpha_val=0.1,
-                                Kernal_ini=True, Max_iter=300)
-    # TaskModel.Train_Model(Loop=3, Model_File='model/600867_Model_HO.csv')
-    TaskModel.Train_Model(Loop=3, Model_File=tr_para[3])
-    # TaskModel.Load_Model('model/600867_Model_HO.csv')
-    TaskModel.Load_Model(tr_para[3])
-    # TaskModel.Cross_Validate_Model(KernalType='g', Output='output/600867_Test_HO.csv')
-    TaskModel.Cross_Validate_Model(KernalType='g', Output=tr_para[4])
-    Precesion, Recall, Accuracy, TP, FP, TN, FN = TaskModel.Performance_Diag(Model='C')
-
-    # model.ModelLearningCurve.append([TaskModel.Eidx_Training, TaskModel.Eidx_CV])
-    # print model.ModelLearningCurve
-    line = [
-        'C: %s,  Sigma: %s, TP:%s, FP:%s, TN:%s, FN:%s, Precesion: %s, Recall: %s, Accuracy: %s, Eidx_Training: %s, Eidx_CV: %s \n' % (
-            each_C, each_Sigma, TP, FP, TN, FN, Precesion, Recall, Accuracy, TaskModel.Eidx_Training,
-            TaskModel.Eidx_CV)]
-    # fn.writelines(
-    #    'C: %s,  Sigma: %s, TP:%s, FP:%s, TN:%s, FN:%s, Precesion: %s, Recall: %s, Accuracy: %s, Eidx_Training: %s, Eidx_CV: %s \n' % (
-    #        each_C, each_Sigma, TP, FP, TN, FN, Precesion, Recall, Accuracy, model.Eidx_Training, model.Eidx_CV))
-    outlist = [TaskModel.Eidx_Training, TaskModel.Eidx_CV, line]
-    output_que.put(outlist)
-
-def batch_test_parameters():
-    model = SVMClassifier()
-    # TrainingSource = ['StockTrainingParameter1.csv', 'StockTrainingParameter2.csv', 'StockTrainingParameter3.csv',
-    #                  'StockTrainingParameter4.csv', 'StockTrainingParameter5.csv', 'StockTrainingParameter6.csv']
-    # CVSource = ['StockCVParameter1.csv', 'StockCVParameter2.csv', 'StockCVParameter3.csv', 'StockCVParameter4.csv',
-    #            'StockCVParameter5.csv', 'StockCVParameter6.csv']
-    TrainingSource = ['TrainingHO.csv', 'TrainingLO.csv']
-    CVSource = ['CVH.csv', 'CVL.csv']
-    fn = open('StockMultiParameterResults.csv', "w+")
-
-    for i in range(len(TrainingSource)):
-        model.LoadData('CV', Training_source=TrainingSource[i], CrossValidation_source=CVSource[i])
-        model._Update_Variables(C=4.0, Sigma=0.8, T=0.001, Step=0.01, KernalType='g', alpha_ini=True,
-                                alpha_val=0.1,
-                                Kernal_ini=True, Max_iter=3000)
-        model.Train_Model(Loop=3, Model_File='StockMultiParameterModel1.csv')
-        model.Load_Model('StockMultiParameterModel1.csv')
-        model.Cross_Validate_Model(KernalType='g', Output='StockMultiParameterTest1.csv')
-        Precesion, Recall, Accuracy, TP, FP, TN, FN = model.Performance_Diag(Model='C')
-        model.ModelLearningCurve.append([round(model.Eidx_Training, 4), round(model.Eidx_CV, 4)])
-        fn.writelines(
-            'C: %s,  Sigma: %s, TP:%s, FP:%s, TN:%s, FN:%s, Precesion: %s, Recall: %s, Accuracy: %s, Eidx_Training: %s, Eidx_CV: %s \n' % (
-                4.0, 0.8, TP, FP, TN, FN, Precesion, Recall, Accuracy, model.Eidx_Training, model.Eidx_CV))
-    fn.close()
-    model.Plot_Learning_Curve()
-
-
-def batch_test_sample_sizes():
-    model = SVMClassifier()
-    TrainingSource = ['Training_100-30.csv', 'Training_150-30.csv', 'Training_200-30.csv', 'Training_250-30.csv',
-                      'Training_298-30.csv']
-    CVSource = ['CV_100-30.csv', 'CV_100-30.csv', 'CV_100-30.csv', 'CV_100-30.csv', 'CV_100-30.csv']
-    fn = open('StockSampleSizesResults.csv', "w+")
-
-    for i in range(len(TrainingSource)):
-        model.LoadData('CV', Training_source=TrainingSource[i], CrossValidation_source=CVSource[i])
-        model._Update_Variables(C=4.0, Sigma=0.8, T=0.001, Step=0.01, KernalType='g', alpha_ini=True,
-                                alpha_val=0.1,
-                                Kernal_ini=True, Max_iter=3000)
-        model.Train_Model(Loop=3, Model_File='StockSampleSizesModel1.csv')
-        model.Load_Model('StockSampleSizesModel1.csv')
-        model.Cross_Validate_Model(KernalType='g', Output='StockSampleSizesTest1.csv')
-        Precesion, Recall, Accuracy, TP, FP, TN, FN = model.Performance_Diag(Model='C')
-        # model.ModelLearningCurve.append([round(model.Eidx_Training,4), round(model.Eidx_CV,4)])
-        model.ModelLearningCurve.append([round(model.Lidx_Training, 4), round(model.Lidx_CV, 4)])
-        fn.writelines(
-            'C: %s,  Sigma: %s, TP:%s, FP:%s, TN:%s, FN:%s, Precesion: %s, Recall: %s, Accuracy: %s, Eidx_Training: %s, Eidx_CV: %s, Lidx_Training: %s, Lidx_CV: %s\n' % (
-                4.0, 0.8, TP, FP, TN, FN, Precesion, Recall, Accuracy, model.Eidx_Training, model.Eidx_CV,
-                model.Lidx_Training,
-                model.Lidx_CV))
-    fn.close()
-    model.Plot_Learning_Curve()
-
-
-def processes_pool(tasks, processors):
-    # This is a self made Multiprocess pool
-    task_total = len(tasks)
-    loop_total = task_total / processors
-    # print "task total is %s, loop_total is %s" % (task_total, loop_total)
-    alive = True
-    task_finished = 0
-    task_alive = 0
-    task_remain = task_total - task_finished
-    count = 0
-
-    for i in range(task_total):
-        tasks[i].start()
-
-    for i in range(task_total):
-        tasks[i].join()
-
-    '''
     i = 0
-    while i <= loop_total:
-        # print "This is the %s round" % i
-        for j in range(processors):
-            k = j + processors * i
-            # print "executing task %s" % k
-            if k == task_total:
-                break
-            tasks[k].start()
-            j += 1
+    for i in range(0, 4):
+        model.LoadData(Training_source=pre_para['Training_source'][i])
+        model._Update_Variables(C=pre_para['parameter'][i][0], Sigma=pre_para['parameter'][i][1], T=0.001, Step=0.01,
+                                KernalType='g',
+                                alpha_ini=True, alpha_val=0.1,
+                                Kernal_ini=True, Max_iter=300)
+        model.Load_Model(pre_para['train_model'][i])
+        model.Predict(xValueDir=pre_para['xValueDir'][i], yOutputDir=pre_para['yOutputDir'][i], KernalType='g')
 
-        for j in range(processors):
-            k = j + processors * i
-            if k == task_total:
-                break
-            tasks[k].join()
-            j += 1
-
-        while alive == True:
-            n = 0
-            alive = False
-            for j in range(processors):
-                k = j + processors * i
-                if k == task_total:
-                    # print "This is the %s round of loop"%i
-                    break
-                if tasks[k].is_alive():
-                    alive = True
-                time.sleep(1)
-
-        i += 1
-    '''
 
 if __name__ == '__main__':
     main()
