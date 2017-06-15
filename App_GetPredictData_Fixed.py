@@ -807,24 +807,8 @@ class C_GettingSVMData(C_GettingData):
 
 def main():
     pp = C_GettingData()
-    # pp.job_schedule()
-    # pp.get_real_time_data('sina', 'sz300226')
-    # pp.get_real_time_data('sh600867', 'real')
-    # pp.save_real_time_data_to_db()
-    # pp.service_getting_data()
-    # pp.get_data_qq(stock_code='sz300226', period='m60')
-    # print pp._time_tag_dateonly()
-    # pp.get_data_qq(stock_code='sh600867',period='m1')
-    # pp.get_data_qq(period='real')
-    # pp.get_data_qq(stock_code='sz300146', period='m30')
-    # pp.get_data_qq(stock_code='sh600221', period='day')
-    # pp.get_data_qq(stock_code='sh600221',period='week')
 
     stock_code = ['sh600221', 'sh600867', 'sz002310', 'sz300146']
-    # stock_code = ['sh600221']
-    # stock_code = 'sz002310'
-    # stock_code = 'sh600221'
-    # stock_code = 'sz300146'
 
     time = '14:25:00'
     dimension = 'H'

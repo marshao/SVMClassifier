@@ -10,7 +10,7 @@ from sqlalchemy.sql import select, and_, or_, not_
 from apscheduler.schedulers.background import BackgroundScheduler
 import multiprocessing as mp
 import logging
-from math import pow
+from math import pow, log
 
 
 class C_GettingData:
@@ -556,7 +556,7 @@ class C_GettingSVMData(C_GettingData):
         if stock_code is None:
             stock_code = 'sh600867'
         if days is None:
-            days = '300'
+            days = '500'
         else:
             days = str(days)
         daily_capital = []
@@ -606,7 +606,7 @@ class C_GettingSVMData(C_GettingData):
         if period is None:
             period = 'day'
         if row_count is None:
-            row_count = 300
+            row_count = 500
         sql_fetch_batch_min_records = (
             "select * from tb_Stock1MinRecords where period = %s and stock_code = %s ORDER by quote_time DESC limit %s")
         sql_fetch_named_min_records = (
@@ -800,6 +800,29 @@ class C_GettingSVMData(C_GettingData):
                 df[new_column] = df[column].pow(degree)
         return df
 
+    def _add_label(self, df=None):
+        '''
+        Add 4 labels, sup, bup, sdown, bdown
+        :param df:
+        :return:
+        '''
+        if df is None:
+            return
+        df['Label'] = 'stay'
+        for i in range(1, (df.shape[0])):
+            index = df.index.values[i]
+            today_close = df.iloc[i - 1]['close_price']
+            yesterday_close = df.iloc[i]['close_price']
+            wave = log(today_close / yesterday_close)
+            if wave >= 0.02:
+                df.set_value(index, 'Label', 'bup')
+            elif wave <= - 0.02:
+                df.set_value(index, 'Label', 'bdown')
+            else:
+                df.set_value(index, 'Label', 'stay')
+
+        return df
+
 
 def main():
     pp = C_GettingData()
@@ -822,14 +845,15 @@ def main():
     # stock_code = 'sh600221'
     # stock_code = 'sz300146'
 
-    time = '14:25:00'
+    time = '10:25:00'
     dimension = 'H'
     ps = C_GettingSVMData()
     # get_batch_svm_data('sh600221', pp, ps, dimension)
-    for stock in stock_code:
-    #get_batch_svm_data(stock, pp, ps, dimension)
+    for i in range(2, 3):
+        stock = stock_code[i]
+        # get_batch_svm_data(stock, pp, ps, dimension)
     # -------------------------------------------------------
-    get_named_minitue_svm_data(stock, pp, ps, time, dimension)
+        get_named_minitue_svm_data(stock, pp, ps, time, dimension)
     # -----------------------------------------------------------
 
 
@@ -838,7 +862,7 @@ def get_batch_svm_data(stock_code, pp, ps, dimension=None):
         dimension = 'L'
     pp.get_data_qq(stock_code=stock_code, period='day')
     df = ps.load_data_from_db(stock_code=stock_code, period='day')
-    ls = ps.get_daily_capital(stock_code=stock_code, days=300)
+    ls = ps.get_daily_capital(stock_code=stock_code, days=500)
     # df = ps.load_capital_from_file_into_df(df, source_file='input\\600867Capital.csv')
     df = ps.load_captical_from_list_into_df(df, ls)
     df = ps._cal_PBPE(stock_code, df)
@@ -849,8 +873,9 @@ def get_batch_svm_data(stock_code, pp, ps, dimension=None):
     if dimension == 'H':
         df = ps._add_higher_degree_parameters(df)
         #df = ps._add_higher_degree_parameters(df, degree=3)
+    df = ps._add_label(df)
     df, means, stds = ps.data_normalization(df)
-    df.to_csv('webdata\\stock_data_%s_%sO_More.csv' % (stock_code, dimension), header=True)
+    df.to_csv('webdata\\stock_data_%s_%sO_L.csv' % (stock_code, dimension), header=True)
 
 
 def get_named_minitue_svm_data(stock_code, pp, ps, time, dimension=None):
@@ -859,17 +884,24 @@ def get_named_minitue_svm_data(stock_code, pp, ps, time, dimension=None):
     df = ps.get_named_minitue_price(stock_code=stock_code, time=time)
     df = ps.get_named_minitue_capital(stock_code=stock_code, time=time, df=df)
     df = ps._cal_PBPE(stock_code, df)
+
     # -----------------------------------------
-    # df = ps._cal_StockAmp(stock_code, df)
-    #df = ps._cal_TurnOver(stock_code, df)
+    df = ps._cal_StockAmp(stock_code, df)
+    df = ps._cal_TurnOver(stock_code, df)
     # -----------------------------------------
     if dimension == 'H':
         df = ps._add_higher_degree_parameters(df)
-        cols_to_write = ['nor_close_price', 'nor_trading_volumn', 'nor_Capital', 'nor_PE_TTM', 'nor_PB',
+        cols_to_write = ['nor_close_price', 'nor_trading_volumn', 'nor_Capital', 'nor_PE_TTM', 'nor_PB', 'nor_SA',
+                         'nor_Turn_Over',
                          'nor_close_price-Order2', 'nor_trading_volumn-Order2', 'nor_Capital-Order2',
-                         'nor_PE_TTM-Order2', 'nor_PB-Order2']
+                         'nor_PE_TTM-Order2', 'nor_PB-Order2', 'nor_SA-Order2', 'nor_Turn_Over-Order2']
+        cols_to_write = ['nor_close_price', 'nor_trading_volumn', 'nor_Capital', 'nor_PE_TTM', 'nor_PB',
+                         'nor_SA', 'nor_Turn_Over', 'nor_close_price-Order2', 'nor_trading_volumn-Order2',
+                         'nor_Capital-Order2', 'nor_PE_TTM-Order2', 'nor_PB-Order2', 'nor_SA-Order2',
+                         'nor_Turn_Over-Order2']
     else:
-        cols_to_write = ['nor_close_price', 'nor_trading_volumn', 'nor_Capital', 'nor_PE_TTM', 'nor_PB']
+        cols_to_write = ['nor_close_price', 'nor_trading_volumn', 'nor_Capital', 'nor_PE_TTM', 'nor_PB', 'nor_SA',
+                         'nor_Turn_Over']
     # Data normalization using batch means and stds
     means, stds = get_batch_svm_data_mean_stds(stock_code, pp, ps)
     for column in df:
