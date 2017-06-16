@@ -810,7 +810,7 @@ def main():
 
     stock_code = ['sh600221', 'sh600867', 'sz002310', 'sz300146']
 
-    time = '14:25:00'
+    time = '14:55:00'
     dimension = 'H'
     ps = C_GettingSVMData()
     # get_batch_svm_data('sh600221', pp, ps, dimension)

@@ -800,6 +800,54 @@ class C_GettingSVMData(C_GettingData):
                 df[new_column] = df[column].pow(degree)
         return df
 
+    def _build_training_and_CV_set(self, df, mode=None):
+        '''
+        Drop useless conlumns
+        Randomly select 50 rows as CV set
+        Use left rows as training set
+        :param df:
+        mode: 'HM', 'HO', "LM", 'LO'
+        :return:
+        '''
+        if mode is None:
+            mode = 'HM'
+
+        columns_HO_more = ['nor_open_price', 'nor_high_price', 'nor_low_price', 'nor_close_price', 'nor_trading_volumn',
+                           'nor_Capital', 'nor_PE_TTM', 'nor_PB', 'nor_SA', 'nor_Turn_Over', 'nor_open_price-Order2',
+                           'nor_high_price-Order2', 'nor_low_price-Order2', 'nor_close_price-Order2',
+                           'nor_trading_volumn-Order2',
+                           'nor_Capital-Order2', 'nor_PE_TTM-Order2', 'nor_PB-Order2', 'nor_SA-Order2',
+                           'nor_Turn_Over-Order2', 'Label']
+
+        columns_HO = ['nor_close_price', 'nor_trading_volumn', 'nor_Capital', 'nor_PE_TTM', 'nor_PB', 'nor_SA',
+                      'nor_Turn_Over',
+                      'nor_close_price-Order2', 'nor_trading_volumn-Order2', 'nor_Capital-Order2', 'nor_PE_TTM-Order2',
+                      'nor_PB-Order2', 'nor_SA-Order2', 'nor_Turn_Over-Order2', 'Label']
+
+        columns_LO_more = ['nor_open_price', 'nor_high_price', 'nor_low_price', 'nor_close_price', 'nor_trading_volumn',
+                           'nor_Capital', 'nor_PE_TTM', 'nor_PB', 'nor_SA', 'nor_Turn_Over', 'Label']
+
+        columns_LO = ['nor_close_price', 'nor_trading_volumn', 'nor_Capital', 'nor_PE_TTM', 'nor_PB', 'nor_SA',
+                      'nor_Turn_Over', 'Label']
+
+        if mode == 'HM':
+            column_list = columns_HO_more
+        elif mode == 'HO':
+            column_list = columns_HO
+        elif mode == 'LM':
+            column_list = columns_LO_more
+        elif mode == 'LO':
+            column_list = columns_LO
+        else:
+            print "No such column list"
+            return
+
+        df_keep = df[column_list]
+        df_cv = df_keep.sample(n=50)
+        df_train = df_keep.loc[~df_keep.index.isin(df_cv.index)]
+        return df_train, df_cv
+
+
     def _add_label(self, df=None):
         '''
         Add 4 labels, sup, bup, sdown, bdown
@@ -826,34 +874,17 @@ class C_GettingSVMData(C_GettingData):
 
 def main():
     pp = C_GettingData()
-    # pp.job_schedule()
-    #pp.get_real_time_data('sina', 'sz300226')
-    #pp.get_real_time_data('sh600867', 'real')
-    #pp.save_real_time_data_to_db()
-    #pp.service_getting_data()
-    #pp.get_data_qq(stock_code='sz300226', period='m60')
-    # print pp._time_tag_dateonly()
-    #pp.get_data_qq(stock_code='sh600867',period='m1')
-    #pp.get_data_qq(period='real')
-    # pp.get_data_qq(stock_code='sz300146', period='m30')
-    # pp.get_data_qq(stock_code='sh600221', period='day')
-    #pp.get_data_qq(stock_code='sh600221',period='week')
-
     stock_code = ['sh600221', 'sh600867', 'sz002310', 'sz300146']
-    # stock_code = ['sh600221']
-    # stock_code = 'sz002310'
-    # stock_code = 'sh600221'
-    # stock_code = 'sz300146'
 
-    time = '10:25:00'
+    time = '14:55:00'
     dimension = 'H'
     ps = C_GettingSVMData()
     # get_batch_svm_data('sh600221', pp, ps, dimension)
-    for i in range(2, 3):
+    for i in range(0, 1):
         stock = stock_code[i]
-        # get_batch_svm_data(stock, pp, ps, dimension)
+        get_batch_svm_data(stock, pp, ps, dimension)
     # -------------------------------------------------------
-        get_named_minitue_svm_data(stock, pp, ps, time, dimension)
+        # get_named_minitue_svm_data(stock, pp, ps, time, dimension)
     # -----------------------------------------------------------
 
 
@@ -866,16 +897,21 @@ def get_batch_svm_data(stock_code, pp, ps, dimension=None):
     # df = ps.load_capital_from_file_into_df(df, source_file='input\\600867Capital.csv')
     df = ps.load_captical_from_list_into_df(df, ls)
     df = ps._cal_PBPE(stock_code, df)
-    # -----------------------------------------
+    # Optional -----------------------------------------
     df = ps._cal_StockAmp(stock_code, df)
     df = ps._cal_TurnOver(stock_code, df)
     #------------------------------------------
     if dimension == 'H':
         df = ps._add_higher_degree_parameters(df)
         #df = ps._add_higher_degree_parameters(df, degree=3)
+    #Optional -------------------------------------------
     df = ps._add_label(df)
+    #------------------------------------------
     df, means, stds = ps.data_normalization(df)
-    df.to_csv('webdata\\stock_data_%s_%sO_L.csv' % (stock_code, dimension), header=True)
+    df_train, df_cv = ps._build_training_and_CV_set(df, 'HM')
+    df_train.to_csv('input\\%s_Train_%sO.csv' % (stock_code[2:], dimension), header=False, index=False)
+    df_cv.to_csv('input\\%s_CV_%sO.csv' % (stock_code[2:], dimension), header=False, index=False)
+    #df.to_csv('webdata\\stock_data_%s_%sO_L.csv' % (stock_code, dimension), header=True)
 
 
 def get_named_minitue_svm_data(stock_code, pp, ps, time, dimension=None):
