@@ -810,7 +810,7 @@ def main():
 
     stock_code = ['sh600221', 'sh600867', 'sz002310', 'sz300146']
 
-    time = '14:25:00'
+    time = '14:55:00'
     dimension = 'H'
     ps = C_GettingSVMData()
     # get_batch_svm_data('sh600221', pp, ps, dimension)
@@ -838,7 +838,7 @@ def get_batch_svm_data(stock_code, pp, ps, dimension=None):
         df = ps._add_higher_degree_parameters(df)
         # df = ps._add_higher_degree_parameters(df, degree=3)
     df, means, stds = ps.data_normalization(df)
-    df.to_csv('webdata/stock_data_%s_%sO.csv' % (stock_code, dimension), header=True)
+    df.to_csv('/home/marshao/SVMClassifier/webdata/stock_data_%s_%sO.csv' % (stock_code, dimension), header=True)
 
 
 def get_named_minitue_svm_data(stock_code, pp, ps, time, dimension=None):
@@ -866,7 +866,8 @@ def get_named_minitue_svm_data(stock_code, pp, ps, time, dimension=None):
             df[column_name] = (df[column] - means[column]) / stds[column]
         else:
             continue
-    df[cols_to_write].to_csv('PredictFiles/stock_data_%s.csv' % stock_code, header=False, index=False)
+    df[cols_to_write].to_csv('/home/marshao/SVMClassifier/PredictFiles/stock_data_%s.csv' % stock_code, header=False,
+                             index=False)
 
 
 def get_batch_svm_data_mean_stds(stock_code, pp, ps):

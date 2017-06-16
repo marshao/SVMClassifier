@@ -1031,15 +1031,18 @@ def predict():
                                'output/Prediction/stock_pre_sz300146.csv']}
     model = SVMClassifier()
 
+    dir = "/home/marshao/SVMClassifier/"
+
     i = 0
     for i in range(0, 4):
-        model.LoadData(Training_source=pre_para['Training_source'][i])
+        model.LoadData(Training_source=(dir + pre_para['Training_source'][i]))
         model._Update_Variables(C=pre_para['parameter'][i][0], Sigma=pre_para['parameter'][i][1], T=0.001, Step=0.01,
                                 KernalType='g',
                                 alpha_ini=True, alpha_val=0.1,
                                 Kernal_ini=True, Max_iter=300)
-        model.Load_Model(pre_para['train_model'][i])
-        model.Predict(xValueDir=pre_para['xValueDir'][i], yOutputDir=pre_para['yOutputDir'][i], KernalType='g')
+        model.Load_Model(dir + pre_para['train_model'][i])
+        model.Predict(xValueDir=(dir + pre_para['xValueDir'][i]), yOutputDir=(dir + pre_para['yOutputDir'][i]),
+                      KernalType='g')
 
 
 if __name__ == '__main__':
