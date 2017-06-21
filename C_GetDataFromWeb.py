@@ -5,8 +5,9 @@ __metclass__ = type
 
 import time, pandas, urllib, re
 import datetime
-from sqlalchemy import create_engine, Table, Column, MetaData
-from sqlalchemy.sql import select, and_, or_, not_
+from sqlalchemy import create_engine, Table, Column, MetaData, text
+from sqlalchemy.sql import select, and_
+from sqlalchemy.orm import sessionmaker
 from apscheduler.schedulers.background import BackgroundScheduler
 import multiprocessing as mp
 import logging
@@ -16,6 +17,8 @@ from math import pow, log
 class C_GettingData:
     '''
     This is the class to monitor the stock real time price from various resources: (Sina, SnowBall, etc)
+    Change: 2017-06-21 Adding function: _cal_high_low_to_now(): This function is used to calculate
+            today_sofar high low price using 1 min data. The purpose is to prepare the prediction X data.
     '''
 
     def __init__(self):
@@ -810,7 +813,7 @@ class C_GettingSVMData(C_GettingData):
         :return:
         '''
         if mode is None:
-            mode = 'HM'
+            mode = 'HO'
 
         columns_HO_more = ['nor_open_price', 'nor_high_price', 'nor_low_price', 'nor_close_price', 'nor_trading_volumn',
                            'nor_Capital', 'nor_PE_TTM', 'nor_PB', 'nor_SA', 'nor_Turn_Over', 'nor_open_price-Order2',
@@ -820,9 +823,8 @@ class C_GettingSVMData(C_GettingData):
                            'nor_Turn_Over-Order2', 'Label']
 
         columns_HO = ['nor_close_price', 'nor_trading_volumn', 'nor_Capital', 'nor_PE_TTM', 'nor_PB', 'nor_SA',
-                      'nor_Turn_Over',
-                      'nor_close_price-Order2', 'nor_trading_volumn-Order2', 'nor_Capital-Order2', 'nor_PE_TTM-Order2',
-                      'nor_PB-Order2', 'nor_SA-Order2', 'nor_Turn_Over-Order2', 'Label']
+                      'nor_Turn_Over', 'nor_close_price-Order2', 'nor_trading_volumn-Order2', 'nor_Capital-Order2',
+                      'nor_PE_TTM-Order2', 'nor_PB-Order2', 'nor_SA-Order2', 'nor_Turn_Over-Order2', 'Label']
 
         columns_LO_more = ['nor_open_price', 'nor_high_price', 'nor_low_price', 'nor_close_price', 'nor_trading_volumn',
                            'nor_Capital', 'nor_PE_TTM', 'nor_PB', 'nor_SA', 'nor_Turn_Over', 'Label']
@@ -871,24 +873,56 @@ class C_GettingSVMData(C_GettingData):
 
         return df
 
+    def _cal_high_low_to_now(self, stock_code=None, df=None):
+        '''
+        This function is to select the open, high and low price today to now.
+        :param stock_code:
+        :param df:
+        :return:
+        '''
+        if df is None:
+            print "Empty df in _cal_high_low_to_now()"
+            return
+        if stock_code is None:
+            print " _cal_high_low_to_now() has no idea to calculate with Stock"
+            return
+        conn = self._engine.connect()
+        today = self._time_tag_dateonly()
+        sql_select_today_open = (
+            "select price from tb_Stock1MinRecords where stock_code = :v1 and date_format(quote_time, '%Y-%m-%d') = :v2 ORDER by quote_time ASC")
+        open_price = float(conn.execute(text(sql_select_today_open), {'v1': stock_code, 'v2': today}).first()[0])
+        sql_select_high_to_now = (
+            "select price from tb_Stock1MinRecords where stock_code = :stock_code and date_format(quote_time, '%Y-%m-%d')= :today ORDER by price DESC")
+        high_price = float(conn.execute(text(sql_select_high_to_now), stock_code=stock_code, today=today).first()[0])
+        sql_select_low_to_now = (
+            "select price from tb_Stock1MinRecords where stock_code = :stock_code and date_format(quote_time, '%Y-%m-%d')= :today ORDER by price ASC")
+        low_price = float(conn.execute(text(sql_select_low_to_now), stock_code=stock_code, today=today).first()[0])
+        conn.close()
+        df['open_price'] = open_price
+        df['high_price'] = high_price
+        df['low_price'] = low_price
+        return df
+
+
 
 def main():
     pp = C_GettingData()
-    stock_code = ['sh600221', 'sh600867', 'sz002310', 'sz300146']
+    stock_code = ['sh600221', 'sh600867', 'sz002310', 'sz300146', 'sz002108']
 
-    time = '14:55:00'
+    time = '11:20:00'
     dimension = 'H'
+    mode = 'HM'
     ps = C_GettingSVMData()
     # get_batch_svm_data('sh600221', pp, ps, dimension)
-    for i in range(0, 1):
+    for i in range(0, 4):
         stock = stock_code[i]
-        get_batch_svm_data(stock, pp, ps, dimension)
+        # get_batch_svm_data(stock, pp, ps, mode, dimension)
     # -------------------------------------------------------
-        # get_named_minitue_svm_data(stock, pp, ps, time, dimension)
+        get_named_minitue_svm_data(stock, pp, ps, time, mode, dimension)
     # -----------------------------------------------------------
 
 
-def get_batch_svm_data(stock_code, pp, ps, dimension=None):
+def get_batch_svm_data(stock_code, pp, ps, mode, dimension=None):
     if dimension is None:
         dimension = 'L'
     pp.get_data_qq(stock_code=stock_code, period='day')
@@ -908,35 +942,41 @@ def get_batch_svm_data(stock_code, pp, ps, dimension=None):
     df = ps._add_label(df)
     #------------------------------------------
     df, means, stds = ps.data_normalization(df)
-    df_train, df_cv = ps._build_training_and_CV_set(df, 'HM')
-    df_train.to_csv('input\\%s_Train_%sO.csv' % (stock_code[2:], dimension), header=False, index=False)
-    df_cv.to_csv('input\\%s_CV_%sO.csv' % (stock_code[2:], dimension), header=False, index=False)
+    df_train, df_cv = ps._build_training_and_CV_set(df, mode)
+    df_train.to_csv('input\\%s_Train_%sO.csv' % (stock_code[2:], dimension), header=True, index=False)
+    df_cv.to_csv('input\\%s_CV_%sO.csv' % (stock_code[2:], dimension), header=True, index=False)
     #df.to_csv('webdata\\stock_data_%s_%sO_L.csv' % (stock_code, dimension), header=True)
 
 
-def get_named_minitue_svm_data(stock_code, pp, ps, time, dimension=None):
+def get_named_minitue_svm_data(stock_code, pp, ps, time, mode, dimension=None):
     if dimension is None:
         dimension = 'H'
+    pp.get_data_qq(stock_code=stock_code, period='m1')
     df = ps.get_named_minitue_price(stock_code=stock_code, time=time)
     df = ps.get_named_minitue_capital(stock_code=stock_code, time=time, df=df)
+    df = ps._cal_high_low_to_now(stock_code=stock_code, df=df)
     df = ps._cal_PBPE(stock_code, df)
-
     # -----------------------------------------
     df = ps._cal_StockAmp(stock_code, df)
     df = ps._cal_TurnOver(stock_code, df)
     # -----------------------------------------
-    if dimension == 'H':
+    if mode == 'HO':
         df = ps._add_higher_degree_parameters(df)
-        cols_to_write = ['nor_close_price', 'nor_trading_volumn', 'nor_Capital', 'nor_PE_TTM', 'nor_PB', 'nor_SA',
-                         'nor_Turn_Over',
-                         'nor_close_price-Order2', 'nor_trading_volumn-Order2', 'nor_Capital-Order2',
-                         'nor_PE_TTM-Order2', 'nor_PB-Order2', 'nor_SA-Order2', 'nor_Turn_Over-Order2']
         cols_to_write = ['nor_close_price', 'nor_trading_volumn', 'nor_Capital', 'nor_PE_TTM', 'nor_PB',
                          'nor_SA', 'nor_Turn_Over', 'nor_close_price-Order2', 'nor_trading_volumn-Order2',
                          'nor_Capital-Order2', 'nor_PE_TTM-Order2', 'nor_PB-Order2', 'nor_SA-Order2',
                          'nor_Turn_Over-Order2']
+    elif mode == 'HM':
+        df = ps._add_higher_degree_parameters(df)
+        cols_to_write = ['nor_open_price', 'nor_high_price', 'nor_low_price', 'nor_close_price',
+                         'nor_trading_volumn', 'nor_Capital', 'nor_PE_TTM', 'nor_PB',
+                         'nor_SA', 'nor_Turn_Over', 'nor_open_price-Order2', 'nor_high_price-Order2',
+                         'nor_low_price-Order2', 'nor_close_price-Order2', 'nor_trading_volumn-Order2',
+                         'nor_Capital-Order2', 'nor_PE_TTM-Order2', 'nor_PB-Order2', 'nor_SA-Order2',
+                         'nor_Turn_Over-Order2']
     else:
-        cols_to_write = ['nor_close_price', 'nor_trading_volumn', 'nor_Capital', 'nor_PE_TTM', 'nor_PB', 'nor_SA',
+        cols_to_write = ['nor_open_price', 'nor_high_price', 'nor_low_price', 'nor_close_price',
+                         'nor_trading_volumn', 'nor_Capital', 'nor_PE_TTM', 'nor_PB', 'nor_SA',
                          'nor_Turn_Over']
     # Data normalization using batch means and stds
     means, stds = get_batch_svm_data_mean_stds(stock_code, pp, ps)
